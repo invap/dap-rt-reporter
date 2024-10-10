@@ -1,5 +1,5 @@
 # Copyright (C) <2024>  INVAP S.E.
-#
+# SPDX-License-Identifier: AGPL-3.0-or-later
 # Test file for add_executable and execute methods.
 # Expected behaviour is:
 # First response is capabilities from GDB

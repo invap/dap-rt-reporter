@@ -1,4 +1,5 @@
 # Copyright (C) <2024>  INVAP S.E.
+# SPDX-License-Identifier: AGPL-3.0-or-later
 
 import subprocess
 import fcntl

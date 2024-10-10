@@ -1,4 +1,5 @@
 # Copyright (C) <2024>  INVAP S.E.
+# SPDX-License-Identifier: AGPL-3.0-or-later
 
 import dap
 from gdb_handler import GDBHandler
@@ -30,6 +31,8 @@ class Reporter:
         #Create gdb subprocess and DAP client
         self.gdb_handler = GDBHandler(["gdb", self.executable_path,"-i=dap", "-quiet"])
         self.dap_client = dap.Client("GDB")
+
+        self.dap_client.
 
         #Send initialize request to gdb
         command = self.dap_client.send()
