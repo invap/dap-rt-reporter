@@ -10,11 +10,29 @@
 from reporter import Reporter
 
 if __name__ == "__main__":
+    # First start debugger with DAP support
+    # TODO: Implement with gdb handler
+
     reporter = Reporter()
 
+    # Load program
+    # TODO: implemt with the reporter
     reporter.add_executable("../test/main", "path")
+
+    # Configure events
+    # Reporter.add_check_point_reached(path:line_number)
+    #   internally should do:
+    #       - Configure debugger to stop (add breackpoint)
+    #       - Configure listener to recognize the event and store the trace execution.
+    # TODO: implement
+
+    # Initialize Rerporter to listen the events.
     response = reporter.initialize()
     print(response)
-    response = reporter.execute()
-    print(response)
 
+    # Start execution
+    response = reporter.execute()
+
+    # Write execution trace report Listening to Debugger stop
+    # Reporter.print response print the stored trace execution.
+    print(response)
