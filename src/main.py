@@ -11,7 +11,8 @@ from reporter import Reporter
 if __name__ == "__main__":
     reporter = Reporter()
 
-    response = reporter.add_executable("../test/main", "path")
+    reporter.add_executable("../test/main", "path")
+    response = reporter.initialize()
     print(response)
     response = reporter.execute()
     print(response)

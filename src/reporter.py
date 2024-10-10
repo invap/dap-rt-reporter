@@ -2,6 +2,7 @@
 # SPDX-License-Identifier: AGPL-3.0-or-later
 
 import dap
+import time
 from gdb_handler import GDBHandler
 
 
@@ -11,39 +12,31 @@ class Reporter:
     """
 
     def __init__(self) -> None:
-        self.gdb_handler = None
-        self.dap_client = None
+        self.gdb_handler = GDBHandler(["gdb", "-i=dap", "-quiet"])
+        self.dap_client = dap.Client("GDB")
 
     def add_executable(self,
                       executable_path: str,
                       execution_trace_log_path: str
-                      ):
-        """Saves executable and log files. 
-        Sends initialize request to gdb.
-
-        Returns the response from GDB.
-        """
+                      ) -> None:
+        """Saves executable and log files."""
 
         self.executable_path = executable_path
         self.execution_trace_log_path = execution_trace_log_path
 
-        #TODO: Revise this section, check alternatives to declare GDBHandler and dap.Client
-        #Create gdb subprocess and DAP client
-        self.gdb_handler = GDBHandler(["gdb", self.executable_path,"-i=dap", "-quiet"])
-        self.dap_client = dap.Client("GDB")
+    def initialize(self) -> bytes:
+        """Send initialize request to gdb"""
 
-        self.dap_client.
-
-        #Send initialize request to gdb
         command = self.dap_client.send()
         response = self.gdb_handler.write(command)
 
         return response
 
-    def execute(self):
+    def execute(self) -> bytes:
         """Sends launch request to GDB, begins program execution."""
 
-        self.dap_client.launch()
+        #Custom request to specify program in gdb launch
+        self.dap_client.send_request(command="launch", arguments={"program": self.executable_path})
         command = self.dap_client.send()
         response = self.gdb_handler.write(command)
 
