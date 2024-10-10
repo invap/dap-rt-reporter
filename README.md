@@ -1,5 +1,8 @@
 # dap-rt-reporter
 Python library to configure, execute the SUT and then report the execution trace
+## Usefull links
+
+* https://github.com/tomlin7/debug-adapter-client
 
 ## Contributing
 
