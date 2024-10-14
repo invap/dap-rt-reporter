@@ -13,6 +13,7 @@ if __name__ == "__main__":
     # TODO: Implement with gdb handler
 
     connection = ConnectionWrapper()
+    #listener = Listener()
     reporter = Reporter(connection)
 
     # Load program
@@ -25,10 +26,6 @@ if __name__ == "__main__":
     #       - Configure debugger to stop (add breackpoint)
     #       - Configure listener to recognize the event and store the trace execution.
     # TODO: implement
-
-    # Initialize Rerporter to listen the events.
-    #response = reporter.set_up()
-    #print(response)
     #response = reporter.set_checkpoint(...)
     #print(response)
 
