@@ -9,12 +9,14 @@ import time
 DEFAULT_LAUNCH_COMMAND = ["gdb", "-i=dap", "-quiet"]
 
 class GDBHandler:
-    """GDBHandler handles the connection between GDB and the Reporter.
+    """GDBHandler handles the connection to GDB.
     Can be used as standalone to send commands to gdb.
     """
-    def __init__(self, 
-                 launch_command: str = DEFAULT_LAUNCH_COMMAND
-                 ) -> None:
+    def __init__(
+            self, 
+            launch_command: list[str] = DEFAULT_LAUNCH_COMMAND
+            ) -> None:
+        
         self.launch_command = launch_command
         self.create_gdb_subprocess()
 

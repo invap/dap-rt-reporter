@@ -8,16 +8,18 @@
 # Second response is launch response, then start sequence, ends with exited event
 
 from reporter import Reporter
+from connection_wrapper import ConnectionWrapper
 
 if __name__ == "__main__":
     # First start debugger with DAP support
     # TODO: Implement with gdb handler
 
-    reporter = Reporter()
+    connection = ConnectionWrapper()
+    reporter = Reporter(connection)
 
     # Load program
-    # TODO: implemt with the reporter
-    reporter.add_executable("../test/main", "path")
+    # TODO: implement with the reporter
+    reporter.add_executable("../test/main", "../test/main_log_file.log")
 
     # Configure events
     # Reporter.add_check_point_reached(path:line_number)
@@ -27,12 +29,16 @@ if __name__ == "__main__":
     # TODO: implement
 
     # Initialize Rerporter to listen the events.
-    response = reporter.initialize()
-    print(response)
+    #response = reporter.set_up()
+    #print(response)
+    #response = reporter.set_checkpoint(...)
+    #print(response)
 
     # Start execution
     response = reporter.execute()
+    print(response)
 
     # Write execution trace report Listening to Debugger stop
     # Reporter.print response print the stored trace execution.
-    print(response)
+    #ReportListener.handle_response(response)
+    #print(response)
