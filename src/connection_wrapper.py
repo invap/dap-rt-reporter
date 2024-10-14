@@ -32,3 +32,6 @@ class ConnectionWrapper:
         response = self.gdb_handler.write(command)
 
         return response
+    
+    def set_breakpoints(self):
+        self.dap_client.set_breakpoints()

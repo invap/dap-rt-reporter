@@ -22,3 +22,9 @@ class Reporter:
         """Sends launch request to GDB, begins program execution."""
 
         return self.debugger_connection.launch(self.executable_path)
+    
+    def set_up(self):
+        pass
+
+    def set_checkpoint(self):
+        pass
