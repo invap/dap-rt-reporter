@@ -24,7 +24,7 @@ class TestExecuteProgram(unittest.TestCase):
         self.connection.close_connection()
 
         #Checks if response contains a terminated event
-        self.assertIn("{\"type\": \"event\", \"event\": \"terminated\"", response)
+        self.assertIn("{\"type\": \"event\", \"event\": \"exited\", \"body\": {\"exitCode\": 0}, ", response)
 
 if __name__ == "__main__":
     unittest.main()
