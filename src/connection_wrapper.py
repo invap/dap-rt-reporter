@@ -2,7 +2,7 @@
 # SPDX-License-Identifier: AGPL-3.0-or-later
 
 import dap
-from gdb_handler import GDBHandler
+from src.gdb_handler import GDBHandler
 
 class ConnectionWrapper:
     """Wrapper for the connection between the DAP client and GDB."""
@@ -32,6 +32,8 @@ class ConnectionWrapper:
         response = self.gdb_handler.write(command)
 
         return response
-    
-    def set_breakpoints(self):
-        self.dap_client.set_breakpoints()
+
+    def close_connection(self):
+        """Kill GDB subprocess."""
+
+        self.gdb_handler.close()

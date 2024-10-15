@@ -1,5 +1,9 @@
 # dap-rt-reporter
 Python library to configure, execute the SUT and then report the execution trace
+
+## Dependencies
+* GDB version >= 15.1, python support needed to use DAP interpreter (use --with-python=dir when building GDB).
+
 ## Usefull links
 
 * https://github.com/tomlin7/debug-adapter-client

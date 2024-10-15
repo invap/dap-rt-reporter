@@ -74,3 +74,9 @@ class GDBHandler:
             response += r
 
         return response
+    
+    def close(self):
+        self.gdb_subprocess.stdin.close()
+        self.gdb_subprocess.stdout.close()
+        self.gdb_subprocess.stderr.close()
+        self.gdb_subprocess.kill()

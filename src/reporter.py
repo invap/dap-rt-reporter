@@ -9,6 +9,7 @@ class Reporter:
     # TODO: Add dap wrapper as parameter
     def __init__(self, debugger_connection) -> None:
         self.debugger_connection = debugger_connection
+        #self.listener = listener
 
     def add_executable(
             self, executable_path: str, execution_trace_log_path: str
@@ -23,8 +24,10 @@ class Reporter:
 
         return self.debugger_connection.launch(self.executable_path)
     
-    def set_up(self):
+    def _set_up(self):
         pass
 
     def set_checkpoint(self):
         pass
+
+
