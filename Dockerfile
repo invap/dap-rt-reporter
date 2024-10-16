@@ -5,10 +5,15 @@ python3 \
 pipx \
 build-essential \
 gdb \
-python-is-python3
+python-is-python3 \
+curl \
+git 
+
 
 
 RUN pipx install poetry 
+
+RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
 
 ENV PATH="$PATH:~/.local/bin"
 
