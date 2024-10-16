@@ -8,6 +8,16 @@ Python library to configure, execute the SUT and then report the execution trace
 
 * https://github.com/tomlin7/debug-adapter-client
 
+## Using docker
+1. First build the image
+``` sh
+docker build . -t dap-rt-reporter-env
+```
+
+1. Then
+``` sh
+docker run  -u `id -u` -it -v$PWD:/home/workspace/$PWD dap-rt-reporter-env 
+```
 ## Contributing
 
 Contributions are what make the open source community such an amazing place to learn, inspire, and create. Any contributions you make are **greatly appreciated**.
