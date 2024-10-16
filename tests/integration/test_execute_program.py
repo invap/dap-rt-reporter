@@ -16,7 +16,7 @@ class TestExecuteProgram(unittest.TestCase):
         self.reporter = Reporter(self.connection)
 
         # Set main binary as executable, log file is not used
-        self.reporter.add_executable("resources/main", "resources/main_log_file.log")
+        self.reporter.add_executable("resources/simple_test/target/debug/simple_test", "resources/main_log_file.log")
 
         response = self.reporter.execute()
         response = response.decode()
