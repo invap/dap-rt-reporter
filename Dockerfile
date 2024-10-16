@@ -4,7 +4,9 @@ RUN apt update && apt install -y \
 python3 \
 pipx \
 build-essential \
-gdb
+gdb \
+python-is-python3
+
 
 RUN pipx install poetry 
 
