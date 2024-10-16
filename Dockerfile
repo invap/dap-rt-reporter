@@ -9,3 +9,5 @@ gdb
 RUN pipx install poetry 
 
 ENV PATH="$PATH:~/.local/bin"
+
+WORKDIR /home/workspace
