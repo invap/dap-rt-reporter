@@ -16,8 +16,16 @@ docker build . -t dap-rt-reporter-env
 
 1. Then
 ``` sh
-docker run  -u `id -u` -it -v$PWD:/home/workspace dap-rt-reporter-env 
+docker run  -u `id -u` -it -v$PWD:/home/workspace dap-rt-reporter-env
+
 ```
+Once in the container:
+
+``` sh
+poetry shell
+python -m snidest discover -s tests/integration
+```
+
 ## Contributing
 
 Contributions are what make the open source community such an amazing place to learn, inspire, and create. Any contributions you make are **greatly appreciated**.
