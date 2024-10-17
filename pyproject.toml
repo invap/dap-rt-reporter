@@ -9,7 +9,7 @@ authors = [
 license = "SPDX-License-Identifier: AGPL-3.0-or-later"
 readme = "README.md"
 packages = [
-    { include = "src"},
+    { include = "dap_rt_reporter"},
 ]
 
 [tool.poetry.dependencies]

@@ -2,7 +2,7 @@
 # SPDX-License-Identifier: AGPL-3.0-or-later
 
 import dap
-from src.gdb_handler import GDBHandler
+from dap_rt_reporter.gdb_handler import GDBHandler
 
 class ConnectionWrapper:
     """Wrapper for the connection between the DAP client and GDB."""

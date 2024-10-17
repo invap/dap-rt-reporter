@@ -23,7 +23,7 @@ Once in the container:
 
 ``` sh
 poetry shell
-python -m snidest discover -s tests/integration
+python -m unittest discover -s tests/integration
 ```
 
 ## Contributing

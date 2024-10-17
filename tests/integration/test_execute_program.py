@@ -7,9 +7,8 @@
 
 import unittest
 
-from src.connection_wrapper import ConnectionWrapper
-from src.reporter import Reporter
-
+from dap_rt_reporter.connection_wrapper import ConnectionWrapper
+from dap_rt_reporter.reporter import Reporter
 
 class TestExecuteProgram(unittest.TestCase):
     def test_start(self):
@@ -18,9 +17,9 @@ class TestExecuteProgram(unittest.TestCase):
 
         # Set main binary as executable, log file is not used
         self.reporter.add_executable(
-            "resources/simple_test/target/debug/simple_test",
-            "resources/main_log_file.log",
-        )
+            "tests/integration/resources/simple_test/target/debug/simple_test", 
+            "resources/main_log_file.log"
+            )
 
         response = self.reporter.execute()
         response = response.decode()
@@ -29,9 +28,9 @@ class TestExecuteProgram(unittest.TestCase):
 
         # Checks if response contains a terminated event
         self.assertIn(
-            '{"type": "event", "event": "exited", "body": {"exitCode": 0}, ', response
-        )
-
+            "{\"type\": \"event\", \"event\": \"exited\", \"body\": {\"exitCode\": 0}, ", response
+            )
 
 if __name__ == "__main__":
     unittest.main()
+
