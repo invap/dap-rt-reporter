@@ -32,6 +32,15 @@ class ConnectionWrapper:
         response = self.gdb_handler.write(command)
 
         return response
+    
+    def set_breakpoints_source(self, source, breakpoints):
+        """Sends set breakpoints in source request, clears all past breakpoints."""
+
+        self.dap_client.set_breakpoints(source=source, breakpoints=breakpoints)
+        command = self.dap_client.send()
+        response = self.gdb_handler.write(command)
+
+        return response
 
     def close_connection(self):
         """Kill GDB subprocess."""
