@@ -26,6 +26,8 @@ class Reporter:
     def execute(self) -> bytes:
         """Sends launch request to GDB, begins program execution."""
 
+        self._set_up()
+
         return self.debugger_connection.launch(self.executable_path)
     
     def _set_up(self):
@@ -40,7 +42,8 @@ class Reporter:
             source = source_path[source_path.rfind('/')+1:]
             source_dap_form = {"name": source, "path": source_path}
 
-            self.debugger_connection.set_breakpoints_source(source_dap_form, lines_dap_form)
+            response = self.debugger_connection.set_breakpoints_source(source_dap_form, lines_dap_form)
+            print(response)
 
     def set_checkpoint(
             self, 
