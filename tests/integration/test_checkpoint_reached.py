@@ -21,12 +21,15 @@ class TestCheckpointReached(unittest.TestCase):
                 "resources/main_log_file.log"
                 )
         
-        # Set checkpoint
+        # Set checkpoints
         self.reporter.set_checkpoint(
             "tests/integration/resources/simple_test/src/main.rs",
-            4,
-            'B',
-            'Print'
+            4, 'B', 'Print'
+            )
+        
+        self.reporter.set_checkpoint(
+            "tests/integration/resources/simple_test/src/main.rs",
+            5, 'B', 'Print after'
             )
         
         response = self.reporter.execute()

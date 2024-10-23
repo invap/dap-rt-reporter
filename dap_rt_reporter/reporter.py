@@ -15,6 +15,9 @@ class Reporter:
 
         self.breakpoints_locations = {}
 
+        self.executable_path = None
+        self.execution_trace_log_path = None
+
     def add_executable(
             self, executable_path: str, execution_trace_log_path: str
             ) -> None:
@@ -26,15 +29,32 @@ class Reporter:
     def execute(self) -> bytes:
         """Sends launch request to GDB, begins program execution."""
 
+        if self.executable_path == None:
+            raise AttributeError("No executable defined, see add_executable().")
+
+        # Set breakpoints
         self._set_up()
 
-        return self.debugger_connection.launch(self.executable_path)
+        # Start execution
+        response = self.debugger_connection.launch(self.executable_path)
+        
+        # TODO: Set another condition for while loop
+        while response != None:
+            print(response)
+            actions = self.listener.listen(response)
+            response = None
+            
     
     def _set_up(self):
 
+        # Add checkpoint reached event to listener
+        #self.listener.add_event(source_path, line, position, 
+        #                        'checkpoint_reached', checkpoint_name)
+
+
         # Set breakpoints for each source
         for source_path in self.breakpoints_locations.keys():
-
+            # Convert the source and lines to DAP format
             lines_dap_form = []
             for line in self.breakpoints_locations[source_path]:
                 lines_dap_form.append({'line': line})
@@ -45,28 +65,18 @@ class Reporter:
             response = self.debugger_connection.set_breakpoints_source(source_dap_form, lines_dap_form)
             print(response)
 
-    def set_checkpoint(
-            self, 
-            source_path: str,
-            line: int,
-            position: str,
-            checkpoint_name: str
-            ) -> None:
+    def set_checkpoint(self, source_path: str, line: int, 
+                       position: str, checkpoint_name: str
+                       ) -> None:
 
-        # Breakpoint not in list
+        # Save checkpoint event
+        checkpoint_values = {'position': position, 'name': checkpoint_name, 'type': 'checkpoint_reached'}
+
         if source_path not in self.breakpoints_locations:
-            self.breakpoints_locations[source_path] = [line]
+            self.breakpoints_locations[source_path] = {str(line): [checkpoint_values]}
         else:
             if line not in self.breakpoints_locations[source_path]:
-                self.breakpoints_locations[source_path].append(line)
-        
-        # Add checkpoint reached event to listener
-        self.listener.add_event(
-            source_path, 
-            line, 
-            position, 
-            'checkpoint_reached', 
-            checkpoint_name)
-
-
-
+                self.breakpoints_locations[source_path][line] = [checkpoint_values]
+            else:
+                self.breakpoints_locations[source_path][line].append([checkpoint_values])
+            
