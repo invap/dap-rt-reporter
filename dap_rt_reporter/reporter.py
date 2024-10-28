@@ -45,7 +45,7 @@ class Reporter:
         encoded_response = self.debugger_connection.launch()
         terminated = False
         while not terminated:
-            print(encoded_response)
+            #print(encoded_response)
             if encoded_response != None:
                 response_list = self.parse_dap_response(encoded_response)
                 encoded_response = None
@@ -56,8 +56,8 @@ class Reporter:
                         if response['body']['reason'] == 'breakpoint':
                             self.listener.handle_response(response, report_file)
                             encoded_response = self.debugger_connection.continue_execution()
-                        elif response['event'] == DAPEvent.TERMINATED:
-                            terminated = True
+                    elif response['event'] == DAPEvent.TERMINATED:
+                        terminated = True
                 elif response['type'] == DAPMessage.RESPONSE:
                     pass
 
@@ -126,7 +126,7 @@ class Reporter:
             source_dap_form = {"name": source, "path": source_path}
 
             response = self.debugger_connection.set_breakpoints_source(source_dap_form, lines_dap_form)
-            print(response)
+            #print(response)
 
 
     def set_checkpoint(self, source_path: str, line: int, 

@@ -1,7 +1,6 @@
 # Copyright (C) <2024>  INVAP S.E.
 # SPDX-License-Identifier: AGPL-3.0-or-later
 
-
 import unittest
 
 from dap_rt_reporter.connection_wrapper import ConnectionWrapper
@@ -28,13 +27,17 @@ class TestCheckpointReached(unittest.TestCase):
         
         # Set checkpoints
         self.reporter.set_checkpoint(
-            "main.rs",
-            10, 'b', 'init_chk'
+            source_path="main.rs",
+            line=10, 
+            before=True, 
+            checkpoint_name='init_chk'
             )
         
         self.reporter.set_checkpoint(
-            "main.rs",
-            16, 'b', 'stop_chk'
+            source_path="main.rs",
+            line=16, 
+            before=True, 
+            checkpoint_name='stop_chk'
             )
         
         response = self.reporter.execute()

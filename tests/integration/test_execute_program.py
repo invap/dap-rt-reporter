@@ -20,7 +20,7 @@ class TestExecuteProgram(unittest.TestCase):
         # Set main binary as executable, log file is not used
         self.reporter.add_executable(
             "tests/integration/resources/simple_test/target/debug/simple_test", 
-            "resources/main_log_file.log"
+            "main_log_file.log"
             )
 
         response = self.reporter.execute()

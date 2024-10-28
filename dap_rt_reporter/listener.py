@@ -16,7 +16,6 @@ class Listener:
 
         id = response['body']['hitBreakpointIds'][0]
         if id in self.events:
-            print("lll")
             for event in self.events[id]:
                 for func in event['functions']:
                     func(csv_writter, event)
