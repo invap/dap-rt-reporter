@@ -29,12 +29,12 @@ class TestCheckpointReached(unittest.TestCase):
         # Set checkpoints
         self.reporter.set_checkpoint(
             "main.rs",
-            11, 'B', 'Init'
+            10, 'b', 'init_chk'
             )
         
         self.reporter.set_checkpoint(
             "main.rs",
-            13, 'B', 'Filtering'
+            16, 'b', 'stop_chk'
             )
         
         response = self.reporter.execute()

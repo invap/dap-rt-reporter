@@ -1,54 +1,30 @@
 # Copyright (C) <2024>  INVAP S.E.
 # SPDX-License-Identifier: AGPL-3.0-or-later
 
-import json
 import csv
+import dap_rt_reporter.listener_functions
+from dap_rt_reporter.constants import DAPMessage, Actions, DAPEvent
 
 class Listener:
     def __init__(self) -> None:
         self.events = {}
 
-    def listen(self, response: bytes, report_file):
+    def handle_response(self, response, report_file):
         """Listens to responses from debugger and gives instructions to reporter."""
 
         csv_writter = csv.writer(report_file, delimiter=',')
 
-        #print(self.events)
-        response_list = self.parse_dap_response(response)
-        for message in response_list:
-            if message['type'] == 'event':
-                if message['event'] == 'stopped':
-                    if message['body']['hitBreakpointIds'][0] in self.events:
-                        id = message['body']['hitBreakpointIds'][0]
-                        for event in self.events[id]:
-                            csv_writter.writerow(['timestamp', event['event_type'], event['event_name']])
-                        return 'continue'
-                    else:
-                        # TODO: Add exception
-                        print("Breakpoint hit not associated with any event.")
-            elif message['type'] == 'response':
-                pass
-        return None
+        id = response['body']['hitBreakpointIds'][0]
+        if id in self.events:
+            print("lll")
+            for event in self.events[id]:
+                for func in event['functions']:
+                    func(csv_writter, event)
 
-    def parse_dap_response(self, response: bytes):
-        """Converts DAP response to dictionary form.
-        Assumes complete message.
-        """
-
-        response_list = []
-        while b'\r\n\r\n' in  response:
-            length, response = response.split(b'\r\n\r\n', 1)
-
-            length = int(length.split(b':')[1])
-            response_list.append(json.loads(response[:length]))
-            response = response[length:]
-
-        return response_list
-
-    def add_event(self, breakpoint_id, source_path, line, position, event_type, event_name, *kwargs):
+    def add_event(self, breakpoint_id, event):
+        """Adds event to listen list, uses breakpoint id as identifier."""
 
         if breakpoint_id not in self.events:
-            self.events[breakpoint_id] = [{'event_type': event_type, 'event_name': event_name, 'position': position}]
-            # TODO: Add kwargs handling
+            self.events[breakpoint_id] = [event]
         else:
-            self.events[breakpoint_id].append({'event_type': event_type, 'event_name': event_name, 'position': position})
+            self.events[breakpoint_id].append(event)
