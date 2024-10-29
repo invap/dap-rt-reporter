@@ -22,8 +22,7 @@ docker build . -t dap-rt-reporter-env
 1. Then
 
 ``` sh
-docker run  -u `id -u` -it -v$PWD:/home/workspace dap-rt-reporter-env
-
+docker run -it -v$PWD:/home/workspace dap-rt-reporter-env
 ```
 
 Once in the container:
