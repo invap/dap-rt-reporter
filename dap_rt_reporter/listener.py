@@ -3,13 +3,13 @@
 
 import csv
 import dap_rt_reporter.listener_functions
-from dap_rt_reporter.constants import DAPMessage, Actions, DAPEvent
+from dap_rt_reporter.constants import DAPMessage, DAPEvent
 
 class Listener:
     def __init__(self) -> None:
         self.events = {}
 
-    def handle_response(self, response, report_file):
+    def handle_response(self, timestamp, response, report_file):
         """Listens to responses from debugger and gives instructions to reporter."""
 
         csv_writter = csv.writer(report_file, delimiter=',')
@@ -18,7 +18,7 @@ class Listener:
         if id in self.events:
             for event in self.events[id]:
                 for func in event['functions']:
-                    func(csv_writter, event)
+                    func(timestamp, event, csv_writter)
 
     def add_event(self, breakpoint_id, event):
         """Adds event to listen list, uses breakpoint id as identifier."""

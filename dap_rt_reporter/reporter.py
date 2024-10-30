@@ -2,9 +2,11 @@
 # SPDX-License-Identifier: AGPL-3.0-or-later
 
 from dap_rt_reporter.listener import Listener
-from dap_rt_reporter.constants import Actions, ReportEvent, DAPMessage, DAPEvent
+from dap_rt_reporter.constants import ReportEvent, DAPMessage, DAPEvent
 from dap_rt_reporter.listener_functions import write_checkpoint_reached
+from dap_rt_reporter.timer import Timer
 import json
+import time
 
 class Reporter:
     """Connects DAP client and GDB then uses output to report
@@ -22,6 +24,8 @@ class Reporter:
         #Used for saving events   
         self.events = []
 
+        self.timer = Timer()
+
     def add_executable(
             self, executable_path: str, execution_trace_log_path: str
             ) -> None:
@@ -30,7 +34,7 @@ class Reporter:
         self.executable_path = executable_path
         self.execution_trace_log_path = execution_trace_log_path
 
-    def execute(self) -> bytes:
+    def execute(self):
         """Begins program execution and report."""
 
         if self.executable_path == None:
@@ -42,20 +46,22 @@ class Reporter:
         self._set_up()
 
         # Start execution
+        self.timer.start()
         encoded_response = self.debugger_connection.launch()
         terminated = False
         while not terminated:
             #print(encoded_response)
-            if encoded_response != None:
-                response_list = self.parse_dap_response(encoded_response)
-                encoded_response = None
+            response_list = self.parse_dap_response(encoded_response)
+            encoded_response = None
 
             for response in response_list:
                 if response['type'] == DAPMessage.EVENT:
                     if response['event'] == DAPEvent.STOPPED:
                         if response['body']['reason'] == 'breakpoint':
-                            self.listener.handle_response(response, report_file)
+                            self.timer.stop()
+                            self.listener.handle_response(self.timer.timer, response, report_file)
                             encoded_response = self.debugger_connection.continue_execution()
+                            self.timer.continue_()
                     elif response['event'] == DAPEvent.TERMINATED:
                         terminated = True
                 elif response['type'] == DAPMessage.RESPONSE:
@@ -76,12 +82,13 @@ class Reporter:
         """
 
         response_list = []
-        while b'\r\n\r\n' in  response:
-            length, response = response.split(b'\r\n\r\n', 1)
+        if response != None:
+            while b'\r\n\r\n' in response:
+                length, response = response.split(b'\r\n\r\n', 1)
 
-            length = int(length.split(b':')[1])
-            response_list.append(json.loads(response[:length]))
-            response = response[length:]
+                length = int(length.split(b':')[1])
+                response_list.append(json.loads(response[:length]))
+                response = response[length:]
 
         return response_list
     
@@ -125,8 +132,15 @@ class Reporter:
             source = source_path[source_path.rfind('/')+1:]
             source_dap_form = {"name": source, "path": source_path}
 
-            response = self.debugger_connection.set_breakpoints_source(source_dap_form, lines_dap_form)
-            #print(response)
+            encoded_response = self.debugger_connection.set_breakpoints_source(source_dap_form, lines_dap_form)
+            response_list = self.parse_dap_response(encoded_response)
+
+            for response in response_list:
+                if response['type'] == DAPMessage.RESPONSE:
+                    if response['command'] == 'setBreakpoints':
+                        for breakpoint in response['body']['breakpoints']:
+                            if not breakpoint['verified']:
+                                raise RuntimeError('Breakpoint not verified: ', breakpoint)
 
 
     def set_checkpoint(self, source_path: str, line: int, 
@@ -143,4 +157,3 @@ class Reporter:
             'functions': [write_checkpoint_reached]
             }
         self.events.append(new_checkpoint)
-            
