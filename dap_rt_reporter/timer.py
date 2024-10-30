@@ -4,6 +4,8 @@
 import time
 
 class Timer:
+    """Timer used to measure execution, discards time in between stop and continue."""
+
     def __init__(self) -> None:
         self.timer = 0
         self.difference = 0
