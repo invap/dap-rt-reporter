@@ -21,22 +21,22 @@ class TestCheckpointReached(unittest.TestCase):
         #        )
 
         self.reporter.add_executable(
-            "../rs-rt-mon-dummy-sut/target/debug/rs-rt-mon-dummy-sut", 
-            "../rs-rt-mon-dummy-sut/main_log_file.log"
+            "../rs-rt-mon-dummy-sut/target/debug/deps/checkpoint_init_ok-fdea0cb5f6d80ebc", 
+            "checkpoint_init_log_file.log"
             )
         
         # Set checkpoints
         self.reporter.set_checkpoint(
-            source_path="main.rs",
-            line=10, 
+            source_path="checkpoint_nit_ok.rs",
+            line=16, 
             before=True, 
             checkpoint_name='init_chk'
             )
         
         self.reporter.set_checkpoint(
-            source_path="main.rs",
-            line=16, 
-            before=True, 
+            source_path="checkpoint_init_ok.rs",
+            line=23, 
+            before=False, 
             checkpoint_name='stop_chk'
             )
         

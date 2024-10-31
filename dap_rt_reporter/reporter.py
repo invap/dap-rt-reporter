@@ -4,7 +4,6 @@
 from dap_rt_reporter.listener import Listener
 from dap_rt_reporter.constants import ReportEvent, DAPMessage, DAPEvent
 from dap_rt_reporter.listener_functions import write_checkpoint_reached
-from dap_rt_reporter.timer import Timer
 import json
 import time
 
@@ -23,8 +22,6 @@ class Reporter:
 
         #Used for saving events   
         self.events = []
-
-        self.timer = Timer()
 
     def add_executable(
             self, executable_path: str, execution_trace_log_path: str
@@ -46,7 +43,6 @@ class Reporter:
         self._set_up()
 
         # Start execution
-        self.timer.start()
         encoded_response = self.debugger_connection.launch()
         terminated = False
         while not terminated:
@@ -54,14 +50,13 @@ class Reporter:
             response_list = self.parse_dap_response(encoded_response)
             encoded_response = None
 
+            # Logic to control program execution
             for response in response_list:
                 if response['type'] == DAPMessage.EVENT:
                     if response['event'] == DAPEvent.STOPPED:
                         if response['body']['reason'] == 'breakpoint':
-                            self.timer.stop()
-                            self.listener.handle_response(self.timer.timer, response, report_file)
+                            self.listener.handle_response(1e6*time.time(), response, report_file, self.debugger_connection)
                             encoded_response = self.debugger_connection.continue_execution()
-                            self.timer.continue_()
                     elif response['event'] == DAPEvent.TERMINATED:
                         terminated = True
                 elif response['type'] == DAPMessage.RESPONSE:
@@ -70,7 +65,6 @@ class Reporter:
             if encoded_response == None:
                 encoded_response = self.debugger_connection.idle()
 
-            
         report_file.close()
 
         return terminated
@@ -124,8 +118,8 @@ class Reporter:
             for line in breakpoint_locations[source_path]:
                 lines_dap_form.append({'line': int(line)})
                 
+                # Add events to listener
                 for event in breakpoint_locations[source_path][line]:
-                    # Add checkpoint reached event to listener
                     self.listener.add_event(breakpoint_id, event)
                     breakpoint_id += 1
             
@@ -135,10 +129,13 @@ class Reporter:
             encoded_response = self.debugger_connection.set_breakpoints_source(source_dap_form, lines_dap_form)
             response_list = self.parse_dap_response(encoded_response)
 
+            # Check breakpoints verification
+            print(response_list)
             for response in response_list:
                 if response['type'] == DAPMessage.RESPONSE:
                     if response['command'] == 'setBreakpoints':
                         for breakpoint in response['body']['breakpoints']:
+                            print(breakpoint)
                             if not breakpoint['verified']:
                                 raise RuntimeError('Breakpoint not verified: ', breakpoint)
 

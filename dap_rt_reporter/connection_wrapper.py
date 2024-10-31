@@ -49,6 +49,13 @@ class ConnectionWrapper:
         
         return response
     
+    def next(self):
+        self.dap_client.next(0)
+        command = self.dap_client.send()
+        response = self.gdb_handler.write(command)
+
+        return response
+
     def idle(self):
         response = self.gdb_handler._read()
 
