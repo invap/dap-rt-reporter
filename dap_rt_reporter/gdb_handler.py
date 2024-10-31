@@ -16,13 +16,16 @@ class GDBHandler:
 
     def __init__(self, launch_command: list[str] = DEFAULT_LAUNCH_COMMAND) -> None:
         self.launch_command = launch_command
-        self.create_gdb_subprocess()
+        self.gdb_subprocess = None
 
-    def create_gdb_subprocess(self) -> int:
+    def create_gdb_subprocess(self, executable_name: str) -> int:
         """Used to create and connect a GDB instance."""
 
+        if(self.gdb_subprocess != None):
+            self.close()
+        
         self.gdb_subprocess = subprocess.Popen(
-            self.launch_command,
+            self.launch_command + [executable_name],
             shell=False,
             stdout=subprocess.PIPE,
             stdin=subprocess.PIPE,

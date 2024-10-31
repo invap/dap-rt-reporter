@@ -11,25 +11,53 @@ class ConnectionWrapper:
         self.gdb_handler = GDBHandler(["gdb", "-i=dap", "-quiet"])
         self.dap_client = dap.Client("DAP Client")
 
-        self.debugger_specs = self.start()
-
-    def start(self) -> bytes:
+    def start(self, executable: str) -> bytes:
         """Start DAP-GDB connection."""
+        self.gdb_handler.create_gdb_subprocess(executable)
 
         command = self.dap_client.send()
         response = self.gdb_handler.write(command)
 
         return response
     
-    def launch(self, executable_path) -> bytes:
+    def launch(self) -> bytes:
         """Sends launch request to GDB, begins program execution."""
 
         # Custom request to specify program in gdb launch
-        self.dap_client.send_request(
-            command="launch", arguments={"program": executable_path}
-        )
+        #self.dap_client.send_request(
+        #    command="launch", arguments={"program": executable_path}
+        #)
+        self.dap_client.launch()
         command = self.dap_client.send()
         response = self.gdb_handler.write(command)
+
+        return response
+    
+    def set_breakpoints_source(self, source, breakpoints):
+        """Sends set breakpoints in source request, clears all past breakpoints."""
+
+        self.dap_client.set_breakpoints(source=source, breakpoints=breakpoints)
+        command = self.dap_client.send()
+        response = self.gdb_handler.write(command)
+
+        return response
+    
+    def continue_execution(self):
+        self.dap_client.continue_(0)
+        command = self.dap_client.send()
+        response = self.gdb_handler.write(command)
+        
+        return response
+    
+    def next(self):
+        self.dap_client.next(0)
+        command = self.dap_client.send()
+        response = self.gdb_handler.write(command)
+
+        return response
+
+    def idle(self):
+        response = self.gdb_handler._read()
 
         return response
 
