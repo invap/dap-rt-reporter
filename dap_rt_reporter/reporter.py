@@ -131,13 +131,19 @@ class Reporter:
 
             # Check breakpoints verification
             print(response_list)
+
+            breakpoint_initialize_fail = False
+            output_buffer = []
             for response in response_list:
-                if response['type'] == DAPMessage.RESPONSE:
-                    if response['command'] == 'setBreakpoints':
-                        for breakpoint in response['body']['breakpoints']:
-                            print(breakpoint)
+                if response['type'] == DAPMessage.RESPONSE and response['command'] == 'setBreakpoints':
+                    for breakpoint in response['body']['breakpoints']:
                             if not breakpoint['verified']:
-                                raise RuntimeError('Breakpoint not verified: ', breakpoint)
+                                breakpoint_initialize_fail = True
+                elif response['type'] == DAPMessage.EVENT and response['event'] == DAPEvent.OUTPUT:
+                    output_buffer.append(response['body']['output'])
+            
+            if breakpoint_initialize_fail:
+                raise RuntimeError('Breakpoint failed verification: ', output_buffer)
 
 
     def set_checkpoint(self, source_path: str, line: int, 
