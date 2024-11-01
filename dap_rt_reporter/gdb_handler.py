@@ -14,16 +14,11 @@ class GDBHandler:
     Can be used as standalone to send commands to gdb.
     """
 
-    def __init__(self, launch_command: list[str] = DEFAULT_LAUNCH_COMMAND) -> None:
+    def __init__(
+        self, executable_name: str, launch_command: list[str] = DEFAULT_LAUNCH_COMMAND
+    ) -> None:
         self.launch_command = launch_command
-        self.gdb_subprocess = None
 
-    def create_gdb_subprocess(self, executable_name: str) -> int:
-        """Used to create and connect a GDB instance."""
-
-        if(self.gdb_subprocess != None):
-            self.close()
-        
         self.gdb_subprocess = subprocess.Popen(
             self.launch_command + [executable_name],
             shell=False,
@@ -33,22 +28,30 @@ class GDBHandler:
         )
 
         # Make pipes non blocking
-        fcntl.fcntl(self.gdb_subprocess.stdout, fcntl.F_SETFL, os.O_NONBLOCK)
-        fcntl.fcntl(self.gdb_subprocess.stderr, fcntl.F_SETFL, os.O_NONBLOCK)
-
-        return self.gdb_subprocess.pid
+        if (
+            self.gdb_subprocess.stdout is not None
+            and self.gdb_subprocess.stderr is not None
+        ):
+            fcntl.fcntl(self.gdb_subprocess.stdout, fcntl.F_SETFL, os.O_NONBLOCK)
+            fcntl.fcntl(self.gdb_subprocess.stderr, fcntl.F_SETFL, os.O_NONBLOCK)
+        else:
+            raise RuntimeError("Invalid state gdb subprocess stdout/stderr  is None")
 
     def write(self, command: bytes, timeout: float = 1):
-        self.gdb_subprocess.stdin.write(command)
-        self.gdb_subprocess.stdin.flush()
-
-        return self._read(timeout)
+        if self.gdb_subprocess is not None and self.gdb_subprocess.stdin is not None:
+            self.gdb_subprocess.stdin.write(command)
+            self.gdb_subprocess.stdin.flush()
+            return self._read(timeout)
+        else:
+            raise RuntimeError("Invalid state gdb subprocess is None")
 
     def _read(self, timeout: float = 1) -> bytes:
         """Reads from stdout pipe.
 
         Returns encoded response.
         """
+        if self.gdb_subprocess.stdout is None:
+            raise RuntimeError("Invalid state gdb subprocess is None")
 
         timeout_timer = time.time() + timeout
 
@@ -71,7 +74,13 @@ class GDBHandler:
         return response
 
     def close(self):
-        self.gdb_subprocess.stdin.close()
-        self.gdb_subprocess.stdout.close()
-        self.gdb_subprocess.stderr.close()
+        if self.gdb_subprocess.stdout is not None:
+            self.gdb_subprocess.stdout.close()
+
+        if self.gdb_subprocess.stdin is not None:
+            self.gdb_subprocess.stdin.close()
+        if self.gdb_subprocess.stderr is not None:
+            self.gdb_subprocess.stderr.close()
+
         self.gdb_subprocess.terminate()
+        self.gdb_subprocess.wait()
