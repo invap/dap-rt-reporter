@@ -9,17 +9,15 @@ class Listener:
     def __init__(self) -> None:
         self.events = {}
 
-    def handle_response(self, timestamp, response, report_file, debugger_connection):
+    def handle_response(self, timestamp, response, csv_writer, debugger_connection):
         """Listens to responses from debugger and gives instructions to reporter."""
-
-        csv_writter = csv.writer(report_file, delimiter=',')
 
         id = response['body']['hitBreakpointIds'][0]
 
         # Before events
         for event in self.events[id]['b']:
             for func in event['functions']:
-                    func(timestamp, event, csv_writter)
+                    func(timestamp, event, csv_writer)
 
         # After events
         if len(self.events[id]['a']):
@@ -27,7 +25,7 @@ class Listener:
             
             for event in self.events[id]['a']:
                 for func in event['functions']:
-                    func(timestamp, event, csv_writter)
+                    func(timestamp, event, csv_writer)
 
 
     def add_event(self, breakpoint_id, event):

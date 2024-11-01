@@ -6,6 +6,7 @@ from dap_rt_reporter.constants import ReportEvent, DAPMessage, DAPEvent
 from dap_rt_reporter.listener_functions import write_checkpoint_reached
 import json
 import time
+import csv
 
 class Reporter:
     """Connects DAP client and GDB then uses output to report
@@ -38,6 +39,7 @@ class Reporter:
             raise AttributeError("No executable defined, see add_executable().")
 
         report_file = open(self.execution_trace_log_path, 'w')
+        csv_writer = csv.writer(report_file, delimiter=',')
         
         self.debugger_connection.start(self.executable_path)
         self._set_up()
@@ -55,7 +57,7 @@ class Reporter:
                 if response['type'] == DAPMessage.EVENT:
                     if response['event'] == DAPEvent.STOPPED:
                         if response['body']['reason'] == 'breakpoint':
-                            self.listener.handle_response(1e6*time.time(), response, report_file, self.debugger_connection)
+                            self.listener.handle_response(1e6*time.time(), response, csv_writer, self.debugger_connection)
                             encoded_response = self.debugger_connection.continue_execution()
                     elif response['event'] == DAPEvent.TERMINATED:
                         terminated = True
@@ -129,9 +131,8 @@ class Reporter:
             encoded_response = self.debugger_connection.set_breakpoints_source(source_dap_form, lines_dap_form)
             response_list = self.parse_dap_response(encoded_response)
 
+            #print(response_list)
             # Check breakpoints verification
-            print(response_list)
-
             breakpoint_initialize_fail = False
             output_buffer = []
             for response in response_list:

@@ -7,7 +7,9 @@ from dap_rt_reporter.gdb_handler import GDBHandler
 class ConnectionWrapper:
     """Wrapper for the connection between the DAP client and GDB."""
 
-    def __init__(self) -> None:
+    def __init__(self, timeout=1) -> None:
+        self.timeout = timeout
+
         self.gdb_handler = GDBHandler(["gdb", "-i=dap", "-quiet"])
         self.dap_client = dap.Client("DAP Client")
 
@@ -16,7 +18,7 @@ class ConnectionWrapper:
         self.gdb_handler.create_gdb_subprocess(executable)
 
         command = self.dap_client.send()
-        response = self.gdb_handler.write(command)
+        response = self.gdb_handler.write(command, self.timeout)
 
         return response
     
@@ -29,7 +31,7 @@ class ConnectionWrapper:
         #)
         self.dap_client.launch()
         command = self.dap_client.send()
-        response = self.gdb_handler.write(command)
+        response = self.gdb_handler.write(command, self.timeout)
 
         return response
     
@@ -38,21 +40,21 @@ class ConnectionWrapper:
 
         self.dap_client.set_breakpoints(source=source, breakpoints=breakpoints)
         command = self.dap_client.send()
-        response = self.gdb_handler.write(command)
+        response = self.gdb_handler.write(command, self.timeout)
 
         return response
     
     def continue_execution(self):
         self.dap_client.continue_(0)
         command = self.dap_client.send()
-        response = self.gdb_handler.write(command)
+        response = self.gdb_handler.write(command, self.timeout)
         
         return response
     
     def next(self):
         self.dap_client.next(0)
         command = self.dap_client.send()
-        response = self.gdb_handler.write(command)
+        response = self.gdb_handler.write(command, self.timeout)
 
         return response
 

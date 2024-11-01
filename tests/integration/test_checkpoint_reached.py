@@ -10,7 +10,7 @@ from dap_rt_reporter.listener import Listener
 
 class TestCheckpointReached(unittest.TestCase):
     def test_checkpoint(self):
-        self.connection = ConnectionWrapper()
+        self.connection = ConnectionWrapper(0.5)
         self.listener = Listener()
         self.reporter = Reporter(self.connection, self.listener)
 
@@ -27,7 +27,7 @@ class TestCheckpointReached(unittest.TestCase):
         
         # Set checkpoints
         self.reporter.set_checkpoint(
-            source_path="checkpoint_nit_ok.rs",
+            source_path="checkpoint_init_ok.rs",
             line=16, 
             before=True, 
             checkpoint_name='init_chk'
