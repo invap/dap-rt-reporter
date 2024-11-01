@@ -57,6 +57,9 @@ class GDBHandler:
 
         gdb_response = []
 
+        # TODO: Replace fixed wait time with smart detection of the encoded output.
+        # e.g. reading the end of line of the message or any other frame detection technique
+        #
         # Read from pipe until timeout
         while timeout_timer - time.time() > 0:
             self.gdb_subprocess.stdout.flush()
