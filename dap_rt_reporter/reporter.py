@@ -60,6 +60,10 @@ class Reporter:
                             encoded_response = (
                                 self.debugger_connection.continue_execution()
                             )
+                        else:
+                            encoded_response = (
+                                self.debugger_connection.continue_execution()
+                            )
                     elif response["event"] == DAPEvent.TERMINATED:
                         terminated = True
                 elif response["type"] == DAPMessage.RESPONSE:
