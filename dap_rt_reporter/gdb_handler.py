@@ -4,7 +4,6 @@
 import subprocess
 import fcntl
 import os
-import time
 
 DEFAULT_LAUNCH_COMMAND = ["gdb", "-i=dap", "-quiet"]
 
@@ -14,15 +13,13 @@ class GDBHandler:
     Can be used as standalone to send commands to gdb.
     """
 
-    def __init__(self, launch_command: list[str] = DEFAULT_LAUNCH_COMMAND) -> None:
+    def __init__(
+        self, executable_name: str, launch_command: list[str] = DEFAULT_LAUNCH_COMMAND
+    ) -> None:
         self.launch_command = launch_command
-        self.create_gdb_subprocess()
-
-    def create_gdb_subprocess(self) -> int:
-        """Used to create and connect a GDB instance."""
 
         self.gdb_subprocess = subprocess.Popen(
-            self.launch_command,
+            self.launch_command + [executable_name],
             shell=False,
             stdout=subprocess.PIPE,
             stdin=subprocess.PIPE,
@@ -30,34 +27,46 @@ class GDBHandler:
         )
 
         # Make pipes non blocking
-        fcntl.fcntl(self.gdb_subprocess.stdout, fcntl.F_SETFL, os.O_NONBLOCK)
-        fcntl.fcntl(self.gdb_subprocess.stderr, fcntl.F_SETFL, os.O_NONBLOCK)
-
-        return self.gdb_subprocess.pid
+        if (
+            self.gdb_subprocess.stdout is not None
+            and self.gdb_subprocess.stderr is not None
+        ):
+            fcntl.fcntl(self.gdb_subprocess.stdout, fcntl.F_SETFL, os.O_NONBLOCK)
+            fcntl.fcntl(self.gdb_subprocess.stderr, fcntl.F_SETFL, os.O_NONBLOCK)
+        else:
+            raise RuntimeError("Invalid state gdb subprocess stdout/stderr  is None")
 
     def write(self, command: bytes, timeout: float = 1):
-        self.gdb_subprocess.stdin.write(command)
-        self.gdb_subprocess.stdin.flush()
-
-        return self._read(timeout)
+        if self.gdb_subprocess is not None and self.gdb_subprocess.stdin is not None:
+            self.gdb_subprocess.stdin.write(command)
+            self.gdb_subprocess.stdin.flush()
+            return self._read(timeout)
+        else:
+            raise RuntimeError("Invalid state gdb subprocess is None")
 
     def _read(self, timeout: float = 1) -> bytes:
         """Reads from stdout pipe.
 
         Returns encoded response.
         """
+        if self.gdb_subprocess.stdout is None:
+            raise RuntimeError("Invalid state gdb subprocess is None")
 
-        timeout_timer = time.time() + timeout
+        #timeout_timer = time.time() + timeout
 
         gdb_response = []
 
+        # TODO: Replace fixed wait time with smart detection of the encoded output.
+        # e.g. reading the end of line of the message or any other frame detection technique
+        #
         # Read from pipe until timeout
-        while timeout_timer - time.time() > 0:
-            self.gdb_subprocess.stdout.flush()
-            encoded_output = self.gdb_subprocess.stdout.read()
+        #while timeout_timer - time.time() > 0:
+        self.gdb_subprocess.stdout.flush()
+        encoded_output = self.gdb_subprocess.stdout.read()
 
-            if encoded_output:
-                gdb_response.append(encoded_output)
+        if encoded_output:
+            gdb_response.append(encoded_output)
+
 
         # TODO: Check for alternative solution
         # Convert responses to single response
@@ -68,7 +77,13 @@ class GDBHandler:
         return response
 
     def close(self):
-        self.gdb_subprocess.stdin.close()
-        self.gdb_subprocess.stdout.close()
-        self.gdb_subprocess.stderr.close()
+        if self.gdb_subprocess.stdout is not None:
+            self.gdb_subprocess.stdout.close()
+
+        if self.gdb_subprocess.stdin is not None:
+            self.gdb_subprocess.stdin.close()
+        if self.gdb_subprocess.stderr is not None:
+            self.gdb_subprocess.stderr.close()
+
         self.gdb_subprocess.terminate()
+        self.gdb_subprocess.wait()
