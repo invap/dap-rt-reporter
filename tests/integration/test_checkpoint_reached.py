@@ -2,35 +2,30 @@
 # SPDX-License-Identifier: AGPL-3.0-or-later
 
 import unittest
+
 from dap_rt_reporter.reporter import Reporter
 
 
 class TestCheckpointReached(unittest.TestCase):
     def test_checkpoint(self):
-        sut = "../rs-rt-mon-dummy-sut/target/debug/deps/checkpoint_init_ok-fdea0cb5f6d80ebc"
-        log_path = "checkpoint_init_log_file.log"
+        sut = "tests/integration/resources/simple_test/target/debug/simple_test"
+        log_path = "main_log_file.log"
 
-        self.reporter = Reporter(
-            sut,
-            log_path,
-        )
+        self.reporter = Reporter(sut, log_path)
 
-        # Set checkpoints
         self.reporter.set_checkpoint(
-            source_path="checkpoint_init_ok.rs",
-            line=16,
-            before=True,
-            checkpoint_name="init_chk",
+            source_path="main.rs", line=7, before=True, checkpoint_name="chk_7"
         )
 
         self.reporter.set_checkpoint(
-            source_path="checkpoint_init_ok.rs",
-            line=23,
-            before=False,
-            checkpoint_name="stop_chk",
+            source_path="main.rs", line=9, before=False, checkpoint_name="chk_9"
+        )
+        self.reporter.set_checkpoint(
+            source_path="main.rs", line=11, before=False, checkpoint_name="chk_11"
         )
 
         print("---------")
+        print(f"Executing: {sut} output to: {log_path}")
         self.reporter.execute()
         self.reporter.stop()
 
