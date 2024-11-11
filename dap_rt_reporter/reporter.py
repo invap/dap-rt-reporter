@@ -136,8 +136,8 @@ class Reporter:
             )
             response_list = self.parse_dap_response(encoded_response)
 
-            # print(response_list)
             # Check breakpoints verification
+            # Read all responses until verification fails, output all stdout
             breakpoint_initialize_fail = False
             output_buffer = []
             for response in response_list:
@@ -160,6 +160,8 @@ class Reporter:
     def set_checkpoint(
         self, source_path: str, line: int, before: bool, checkpoint_name: str
     ) -> None:
+        """Set a checkpoint_reached event at the specified location."""
+
         new_checkpoint = {
             "source_path": source_path,
             "line": line,
