@@ -42,7 +42,6 @@ class Reporter:
         encoded_response = self.debugger_connection.launch()
         terminated = False
         while not terminated:
-            # print(encoded_response)
             response_list = self.parse_dap_response(encoded_response)
             encoded_response = None
 
@@ -115,13 +114,16 @@ class Reporter:
                 else:
                     breakpoint_locations[source_path][line].append([event_values])
 
-        breakpoint_id = 1
         # Set breakpoints for each source
+        breakpoint_id = 1
+        breakpoint_id_table = {}
         for source_path in breakpoint_locations:
             # Convert the source and lines to DAP format
             lines_dap_form = []
             for line in breakpoint_locations[source_path]:
                 lines_dap_form.append({"line": int(line)})
+
+                breakpoint_id_table[str(breakpoint_id)] = {"source_path": source_path, "line": line}
 
                 # Add events to listener
                 for event in breakpoint_locations[source_path][line]:
@@ -134,28 +136,23 @@ class Reporter:
             encoded_response = self.debugger_connection.set_breakpoints_source(
                 source_dap_form, lines_dap_form
             )
-            response_list = self.parse_dap_response(encoded_response)
 
             # Check breakpoints verification
             # Read all responses until verification fails, output all stdout
-            breakpoint_initialize_fail = False
-            output_buffer = []
-            for response in response_list:
-                if (
-                    response["type"] == DAPMessage.RESPONSE
-                    and response["command"] == "setBreakpoints"
-                ):
-                    for breakpoint in response["body"]["breakpoints"]:
-                        if not breakpoint["verified"]:
-                            breakpoint_initialize_fail = True
-                elif (
-                    response["type"] == DAPMessage.EVENT
-                    and response["event"] == DAPEvent.OUTPUT
-                ):
-                    output_buffer.append(response["body"]["output"])
+            breakpoint_verification = False
+            while not breakpoint_verification:
+                response_list = self.parse_dap_response(encoded_response)
+                for response in response_list:
+                    if (
+                        response["type"] == DAPMessage.RESPONSE
+                        and response["command"] == "setBreakpoints"
+                    ):
+                        for breakpoint in response["body"]["breakpoints"]:
+                            if not breakpoint["verified"]:
+                                raise RuntimeError(f"Breakpoint verification failed: \nSource: {breakpoint_id_table[str(breakpoint["id"])]["source_path"]} \nLine: {breakpoint_id_table[str(breakpoint["id"])]["line"]}")
+                        breakpoint_verification = True
 
-            if breakpoint_initialize_fail:
-                raise RuntimeError("Breakpoint failed verification: ", output_buffer)
+                encoded_response = self.debugger_connection.idle()
 
     def set_checkpoint(
         self, source_path: str, line: int, before: bool, checkpoint_name: str
