@@ -1,0 +1,5 @@
+tests/integration/resources/simple_test/src/main.rs:6:b,checkpoint_reached,init_chk
+tests/integration/resources/simple_test/src/main.rs:8:b,checkpoint_reached,stop_chk_before
+tests/integration/resources/simple_test/src/main.rs:8:a,checkpoint_reached,stop_chk_after
+tests/integration/resources/simple_test/src/main.rs:10:b,checkpoint_reached,end_chk_0
+tests/integration/resources/simple_test/src/main.rs:11:b,checkpoint_reached,end_chk_1

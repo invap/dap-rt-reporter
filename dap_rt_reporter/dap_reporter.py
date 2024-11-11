@@ -2,13 +2,14 @@
 # SPDX-License-Identifier: AGPL-3.0-or-later
 
 import csv
+
 from dap_rt_reporter.constants import ReportEvent
 from dap_rt_reporter.reporter import Reporter
 
 if __name__ == "__main__":
-    sut = "../rs-rt-mon-dummy-sut/target/debug/deps/checkpoint_init_ok-fdea0cb5f6d80ebc"
+    sut = "tests/integration/resources/simple_test/target/debug/simple_test"
     log_path = "checkpoint_init_log_file.log"
-    config_file = "../rs-rt-mon-dummy-sut/tests/checkpoint_init_fail_dap_config.txt"
+    config_file = "tests/integration/resources/simple_test_config.csv"
 
     reporter = Reporter(sut, log_path)
 

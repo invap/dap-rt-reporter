@@ -1,13 +1,14 @@
 # Copyright (C) <2024>  INVAP S.E.
 # SPDX-License-Identifier: AGPL-3.0-or-later
 
-from dap_rt_reporter.connection_wrapper import ConnectionWrapper
-from dap_rt_reporter.listener import Listener
-from dap_rt_reporter.constants import ReportEvent, DAPMessage, DAPEvent
-from dap_rt_reporter.listener_functions import write_checkpoint_reached
+import csv
 import json
 import time
-import csv
+
+from dap_rt_reporter.connection_wrapper import ConnectionWrapper
+from dap_rt_reporter.constants import DAPEvent, DAPMessage, ReportEvent
+from dap_rt_reporter.listener import Listener
+from dap_rt_reporter.listener_functions import write_checkpoint_reached
 
 
 class Reporter:
@@ -56,13 +57,9 @@ class Reporter:
                                 csv_writer,
                                 self.debugger_connection,
                             )
-                            encoded_response = (
-                                self.debugger_connection.continue_execution()
-                            )
-                        else:
-                            encoded_response = (
-                                self.debugger_connection.continue_execution()
-                            )
+                        encoded_response = (
+                            self.debugger_connection.continue_execution()
+                        )
                     elif response["event"] == DAPEvent.TERMINATED:
                         terminated = True
                 elif response["type"] == DAPMessage.RESPONSE:
@@ -112,7 +109,7 @@ class Reporter:
                 if line not in breakpoint_locations[source_path]:
                     breakpoint_locations[source_path][line] = [event_values]
                 else:
-                    breakpoint_locations[source_path][line].append([event_values])
+                    breakpoint_locations[source_path][line].append(event_values)
 
         # Set breakpoints for each source
         breakpoint_id = 1
@@ -128,7 +125,7 @@ class Reporter:
                 # Add events to listener
                 for event in breakpoint_locations[source_path][line]:
                     self.listener.add_event(breakpoint_id, event)
-                    breakpoint_id += 1
+                breakpoint_id += 1
 
             source = source_path[source_path.rfind("/") + 1 :]
             source_dap_form = {"name": source, "path": source_path}
