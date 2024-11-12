@@ -12,8 +12,8 @@ if __name__ == "__main__":
     # Parser arguments
     parser = argparse.ArgumentParser(
         prog="dap_reporter",
-        description="",
-        usage="python3 dap_reporter.py --sut path_to_sut --desc path_to_desc --log path_to_log",
+        description="TBD",
+        usage="python3 dap_rt_reporter/dap_reporter.py --sut path_to_sut --desc path_to_desc --log path_to_log",
     )
 
     parser.add_argument("--sut", help="binary of the program to report", required=True)
