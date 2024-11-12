@@ -2,14 +2,28 @@
 # SPDX-License-Identifier: AGPL-3.0-or-later
 
 import csv
+import argparse
 
 from dap_rt_reporter.constants import ReportEvent
 from dap_rt_reporter.reporter import Reporter
 
 if __name__ == "__main__":
-    sut = "tests/integration/resources/simple_test/target/debug/simple_test"
-    log_path = "checkpoint_init_log_file.log"
-    config_file = "tests/integration/resources/simple_test_config.csv"
+    parser = argparse.ArgumentParser(prog="dap_reporter",
+                                     description="")
+    
+    parser.add_argument('sut', help="binary of the program to report")
+    parser.add_argument('--desc', help="configuration file")
+    parser.add_argument('--log', help="log file to store report")
+
+    args = parser.parse_args()
+    
+    sut = args.sut
+    config_file = args.desc
+    log_path = args.log
+
+    #sut = "tests/integration/resources/simple_test/target/debug/simple_test"
+    #log_path = "checkpoint_init_log_file.log"
+    #config_file = "tests/integration/resources/simple_test_config.csv"
 
     reporter = Reporter(sut, log_path)
 
