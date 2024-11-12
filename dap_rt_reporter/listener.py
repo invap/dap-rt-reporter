@@ -12,7 +12,6 @@ class Listener:
         """Listens to responses from debugger and gives instructions to reporter."""
 
         id = response["body"]["hitBreakpointIds"][0]
-
         # Before events
         for event in self.events[id]["b"]:
             for func in event["functions"]:
@@ -20,7 +19,12 @@ class Listener:
 
         # After events
         if len(self.events[id]["a"]):
-            debugger_connection.next()
+            encoded_response = debugger_connection.next()
+            
+            # Wait until step is completed
+            # TODO: Check if timeout or other checks are necessary
+            while b"stopped" not in encoded_response:
+                encoded_response = debugger_connection.idle()
 
             for event in self.events[id]["a"]:
                 for func in event["functions"]:
