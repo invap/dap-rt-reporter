@@ -3,23 +3,37 @@
 
 import csv
 import argparse
+import os
 
 from dap_rt_reporter.constants import ReportEvent
 from dap_rt_reporter.reporter import Reporter
-
-if __name__ == "__main__":
-    parser = argparse.ArgumentParser(prog="dap_reporter",
-                                     description="")
     
-    parser.add_argument('sut', help="binary of the program to report")
-    parser.add_argument('--desc', help="configuration file")
-    parser.add_argument('--log', help="log file to store report")
+if __name__ == "__main__":
+    # Parser arguments
+    parser = argparse.ArgumentParser(prog="dap_reporter",
+                                     description="",
+                                     usage="python3 dap_reporter.py --sut path_to_sut --desc path_to_desc --log path_to_log")
+    
+    parser.add_argument('--sut', help="binary of the program to report", required=True)
+    parser.add_argument('--desc', help="configuration file", required=True)
+    parser.add_argument('--log', help="log file to store report", required=True)
+    parser.add_argument('-f', help="force log rewrite", action="store_true")
 
     args = parser.parse_args()
     
     sut = args.sut
     config_file = args.desc
     log_path = args.log
+    force = args.f
+
+    # Checks
+    if not os.path.isfile(sut):
+        raise RuntimeError(f"No file named {sut} exists.")
+    if not os.path.isfile(config_file):
+        raise RuntimeError(f"No file named {config_file} exists.")
+    if os.path.isfile(log_path) and not force:
+        raise RuntimeError(f"Warning: {log_path} already exists, use -f to force rewrite.")
+    
 
     #sut = "tests/integration/resources/simple_test/target/debug/simple_test"
     #log_path = "checkpoint_init_log_file.log"
