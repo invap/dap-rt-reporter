@@ -1,11 +1,54 @@
 # dap-rt-reporter
+
 Python library to configure, execute the SUT and then report the execution trace
+
+## Dependencies
+
+* GDB version >= 15.1, python support needed to use DAP
+interpreter (use --with-python=dir when building GDB).
+
+## Usefull links
+
+* <https://github.com/tomlin7/debug-adapter-client>
+
+## Using docker
+
+1. First build the image
+
+``` sh
+docker build . -t dap-rt-reporter-env
+```
+
+1. Then
+
+``` sh
+docker run -it -v$PWD:/home/workspace dap-rt-reporter-env
+```
+
+To execute the unit tests, in the container:
+
+``` sh
+poetry shell
+python -m unittest discover -s tests/integration
+```
+
+To execute the program:
+
+``` sh
+poetry shell
+python -m dap_rt_reporter\
+  --sut tests/integration/resources/simple_test/target/debug/simple_test \
+  --desc tests/integration/resources/simple_test_config.csv --log execute.log
+```
 
 ## Contributing
 
-Contributions are what make the open source community such an amazing place to learn, inspire, and create. Any contributions you make are **greatly appreciated**.
+Contributions are what make the open source community such an amazing
+place to learn, inspire, and create. Any contributions you make are **greatly appreciated**.
 
-If you have a suggestion that would make this better, please fork the repo and create a pull request. You can also simply open an issue with the tag "enhancement".
+If you have a suggestion that would make this better, please fork
+the repo and create a pull request. You can also simply open an
+issue with the tag "enhancement".
 Don't forget to give the project a star! Thanks again!
 
 1. Fork the Project

@@ -1,0 +1,21 @@
+[tool.poetry]
+name = "dap-rt-reporter"
+version = "0.1.0"
+description = "Library to configure, execute and report execution trace using DAP"
+authors = [
+  "Alí Veizaga <alvedi66@gmail.com>",
+  "Juan Ignacio Vaccarezza <jivaccarezza@invap.com.ar>",
+]
+license = "SPDX-License-Identifier: AGPL-3.0-or-later"
+readme = "README.md"
+packages = [
+    { include = "dap_rt_reporter"},
+]
+
+[tool.poetry.dependencies]
+python = "^3.10"
+dap-python = "^0.5.0"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
