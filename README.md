@@ -25,11 +25,20 @@ docker build . -t dap-rt-reporter-env
 docker run -it -v$PWD:/home/workspace dap-rt-reporter-env
 ```
 
-Once in the container:
+To execute the unit tests, in the container:
 
 ``` sh
 poetry shell
 python -m unittest discover -s tests/integration
+```
+
+To execute the program:
+
+``` sh
+poetry shell
+python -m dap_rt_reporter\
+  --sut tests/integration/resources/simple_test/target/debug/simple_test \
+  --desc tests/integration/resources/simple_test_config.csv --log execute.log
 ```
 
 ## Contributing
