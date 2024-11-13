@@ -5,7 +5,7 @@ import csv
 import argparse
 import os
 
-from dap_rt_reporter.constants import ReportEvent
+from dap_rt_reporter.types import ReportEvent
 from dap_rt_reporter.reporter import Reporter
 
 # Parser arguments

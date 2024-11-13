@@ -6,7 +6,7 @@ import json
 import time
 
 from dap_rt_reporter.connection_wrapper import ConnectionWrapper
-from dap_rt_reporter.constants import DAPEvent, DAPMessage, ReportEvent
+from dap_rt_reporter.types import DAPEvent, DAPMessage, ReportEvent, ReportEventType
 from dap_rt_reporter.listener import Listener
 from dap_rt_reporter.listener_functions import write_checkpoint_reached
 
@@ -52,14 +52,12 @@ class Reporter:
                     if response["event"] == DAPEvent.STOPPED:
                         if response["body"]["reason"] == "breakpoint":
                             self.listener.handle_response(
-                                1e6 * time.time(),
+                                int(1e6 * time.time()),
                                 response,
                                 csv_writer,
                                 self.debugger_connection,
                             )
-                        encoded_response = (
-                            self.debugger_connection.continue_execution()
-                        )
+                        encoded_response = self.debugger_connection.continue_execution()
                     elif response["event"] == DAPEvent.TERMINATED:
                         terminated = True
                 elif response["type"] == DAPMessage.RESPONSE:
@@ -97,6 +95,7 @@ class Reporter:
             event_values = {
                 "before": event["before"],
                 "name": event["name"],
+                "sub_type": event["sub_type"],
                 "type": event["type"],
                 "args": event["args"],
                 "functions": event["functions"],
@@ -120,7 +119,10 @@ class Reporter:
             for line in breakpoint_locations[source_path]:
                 lines_dap_form.append({"line": int(line)})
 
-                breakpoint_id_table[str(breakpoint_id)] = {"source_path": source_path, "line": line}
+                breakpoint_id_table[str(breakpoint_id)] = {
+                    "source_path": source_path,
+                    "line": line,
+                }
 
                 # Add events to listener
                 for event in breakpoint_locations[source_path][line]:
@@ -146,7 +148,9 @@ class Reporter:
                     ):
                         for breakpoint in response["body"]["breakpoints"]:
                             if not breakpoint["verified"]:
-                                raise RuntimeError(f"Breakpoint verification failed: \nSource: {breakpoint_id_table[str(breakpoint["id"])]["source_path"]} \nLine: {breakpoint_id_table[str(breakpoint["id"])]["line"]}")
+                                raise RuntimeError(
+                                    f"Breakpoint verification failed: \nSource: {breakpoint_id_table[str(breakpoint["id"])]["source_path"]} \nLine: {breakpoint_id_table[str(breakpoint["id"])]["line"]}"
+                                )
                         breakpoint_verification = True
 
                 encoded_response = self.debugger_connection.idle()
@@ -161,7 +165,8 @@ class Reporter:
             "line": line,
             "before": before,
             "name": checkpoint_name,
-            "type": ReportEvent.CHECKPOINT_REACHED,
+            "type": ReportEventType.PROCESS_EVENT,
+            "sub_type": ReportEvent.CHECKPOINT_REACHED,
             "args": {},
             "functions": [write_checkpoint_reached],
         }

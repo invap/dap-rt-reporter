@@ -3,5 +3,5 @@
 
 
 def write_checkpoint_reached(timestamp, event, csv_writer):
-    csv_writer.writerow([timestamp, event["type"], event["name"]])
+    csv_writer.writerow([timestamp, event["type"], event["sub_type"], event["name"]])
 
