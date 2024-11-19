@@ -8,12 +8,15 @@ import time
 from dap_rt_reporter.connection_wrapper import ConnectionWrapper
 from dap_rt_reporter.types import DAPEvent, DAPMessage, ReportEvent, ReportEventType
 from dap_rt_reporter.listener import Listener
-from dap_rt_reporter.listener_functions import write_checkpoint_reached
+from dap_rt_reporter.listener_functions import (
+    write_checkpoint_reached,
+    write_variable_value_assign,
+)
 
 
 class Reporter:
     """Connects DAP client and GDB then uses output to report
-    program behaviour.
+    program behavior.
     """
 
     def __init__(
@@ -103,13 +106,12 @@ class Reporter:
             line = event["line"]
             source_path = event["source_path"]
             if source_path not in breakpoint_locations:
-                breakpoint_locations[source_path] = {str(line): [event_values]}
+                breakpoint_locations[source_path] = {line: [event_values]}
             else:
                 if line not in breakpoint_locations[source_path]:
                     breakpoint_locations[source_path][line] = [event_values]
                 else:
                     breakpoint_locations[source_path][line].append(event_values)
-
         # Set breakpoints for each source
         breakpoint_id = 1
         breakpoint_id_table = {}
@@ -171,6 +173,22 @@ class Reporter:
             "functions": [write_checkpoint_reached],
         }
         self.events.append(new_checkpoint)
+
+    def set_variable_value_assign(
+        self, source_path: str, line: int, before: bool, vva_name: str, variable: str
+    ) -> None:
+        new_vva = {
+            "source_path": source_path,
+            "line": line,
+            "before": before,
+            "name": vva_name,
+            "type": ReportEventType.STATE_EVENT,
+            "sub_type": ReportEvent.VARIABLE_VALUE_ASSIGN,
+            "args": {"variable": variable},
+            "functions": [write_variable_value_assign],
+        }
+
+        self.events.append(new_vva)
 
     def stop(self):
         self.debugger_connection.close_connection()

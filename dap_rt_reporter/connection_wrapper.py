@@ -14,13 +14,16 @@ class ConnectionWrapper:
         self.gdb_handler = GDBHandler(executable, ["gdb", "-i=dap", "-quiet"])
         self.dap_client = dap.Client("DAP Client")
 
-    def start(self) -> bytes:
-        """Start DAP-GDB connection."""
-
+    def _send(self):
         command = self.dap_client.send()
         response = self.gdb_handler.write(command, self.timeout)
 
         return response
+
+    def start(self) -> bytes:
+        """Start DAP-GDB connection."""
+
+        return self._send()
 
     def launch(self) -> bytes:
         """Sends launch request to GDB, begins program execution."""
@@ -30,38 +33,37 @@ class ConnectionWrapper:
         #    command="launch", arguments={"program": executable_path}
         # )
         self.dap_client.launch()
-        command = self.dap_client.send()
-        response = self.gdb_handler.write(command, self.timeout)
-
-        return response
+        return self._send()
 
     def set_breakpoints_source(self, source, breakpoints):
         """Sends set breakpoints in source request, clears all past breakpoints."""
 
         self.dap_client.set_breakpoints(source=source, breakpoints=breakpoints)
-        command = self.dap_client.send()
-        response = self.gdb_handler.write(command, self.timeout)
-
-        return response
+        return self._send()
 
     def continue_execution(self):
-        self.dap_client.continue_(0)
-        command = self.dap_client.send()
-        response = self.gdb_handler.write(command, self.timeout)
+        """Sends continue command at thread id 0."""
 
-        return response
+        self.dap_client.continue_(thread_id=0)
+        return self._send()
 
     def next(self):
-        self.dap_client.next(0)
-        command = self.dap_client.send()
-        response = self.gdb_handler.write(command, self.timeout)
+        """Sends next command to thread id 0."""
 
-        return response
+        self.dap_client.next(thread_id=0)
+        return self._send()
 
     def idle(self):
-        response = self.gdb_handler._read()
+        """Reads from buffer."""
 
+        response = self.gdb_handler._read()
         return response
+
+    def evaluate(self, expression):
+        """Sends evaluate command with given expression in current frame."""
+        self.dap_client.stack_trace(0)
+        self.dap_client.evaluate(expression=expression, frame_id=0)
+        return self._send()
 
     def close_connection(self):
         """Kill GDB subprocess."""

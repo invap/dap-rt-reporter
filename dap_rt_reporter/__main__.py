@@ -42,13 +42,16 @@ with open(config_file, "r") as workflow_file:
     workflow_reader = csv.reader(workflow_file, delimiter=",")
 
     for row in workflow_reader:
-        event_type = row[1]
-        event_name = row[2]
-
         # Split the breakpoint descriptor
         source_path, line, before = row[0].split(":")
         before = before == "b"
 
+        event_type = row[1]
+        event_name = row[2]
+
+        args = []
+        if len(row) > 3:
+            args = row[3:]
         match event_type:
             case ReportEvent.CHECKPOINT_REACHED:
                 reporter.set_checkpoint(
@@ -56,6 +59,14 @@ with open(config_file, "r") as workflow_file:
                     line=int(line),
                     before=before,
                     checkpoint_name=event_name,
+                )
+            case ReportEvent.VARIABLE_VALUE_ASSIGN:
+                reporter.set_variable_value_assign(
+                    source_path=source_path,
+                    line=int(line),
+                    before=before,
+                    vva_name=event_name,
+                    variable=args[0],
                 )
 
 reporter.execute()

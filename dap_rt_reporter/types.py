@@ -24,9 +24,11 @@ class ReportEvent(StrEnum):
     """Enum class contains the Reporter events currently supported"""
 
     CHECKPOINT_REACHED = "checkpoint_reached"
+    VARIABLE_VALUE_ASSIGN = "variable_value_assign"
 
 
 class ReportEventType(StrEnum):
     """Enum class contains the Reporter event types"""
 
     PROCESS_EVENT = "process_event"
+    STATE_EVENT = "state_event"
