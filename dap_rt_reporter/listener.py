@@ -10,13 +10,11 @@ class Listener:
 
     def handle_response(self, timestamp, response, csv_writer, debugger_connection):
         """Listens to responses from debugger and gives instructions to reporter."""
-
         id = response["body"]["hitBreakpointIds"][0]
         # Before events
         for event in self.events[id]["b"]:
             for func in event["functions"]:
-                func(timestamp, event, csv_writer)
-
+                func(timestamp, event, csv_writer, debugger_connection)
         # After events
         if len(self.events[id]["a"]):
             encoded_response = debugger_connection.next()
@@ -28,7 +26,7 @@ class Listener:
 
             for event in self.events[id]["a"]:
                 for func in event["functions"]:
-                    func(timestamp, event, csv_writer)
+                    func(timestamp, event, csv_writer, debugger_connection)
 
     def add_event(self, breakpoint_id, event):
         """Adds event to listen list, uses breakpoint id as identifier."""

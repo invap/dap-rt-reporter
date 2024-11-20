@@ -1,2 +1,3 @@
 tests/integration/resources/simple_test/target/
 __pycache__
+*.log
