@@ -7,7 +7,7 @@ import time
 from dap_rt_reporter.connection_wrapper import ConnectionWrapper
 from dap_rt_reporter.types import DAPEvent, DAPMessage, ReportEvent, ReportEventType
 from dap_rt_reporter.listener import Listener
-from dap_rt_reporter.listener_functions import (
+from dap_rt_reporter.funcs import (
     write_checkpoint_reached,
     write_variable_value_assign,
     write_task_started,
@@ -155,14 +155,13 @@ class Reporter:
             "type": ReportEventType.PROCESS_EVENT,
             "sub_type": ReportEvent.CHECKPOINT_REACHED,
             "args": {},
-            "functions": [write_task_started],
+            "functions": [write_checkpoint_reached],
         }
         self.events.append(new_checkpoint)
 
     def set_task_started(
         self, source_path: str, line: int, before: bool, ts_name
     ) -> None:
-        
         new_ts = {
             "source_path": source_path,
             "line": line,
@@ -188,7 +187,6 @@ class Reporter:
             "args": {"variable": variable},
             "functions": [write_variable_value_assign],
         }
-
         self.events.append(new_vva)
 
     def stop(self):
