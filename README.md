@@ -82,7 +82,7 @@ In order to run the program you need the following things:
 In order to specify the program Process a file with the following format is needed:
 
 ```csv
-source:line:before|after,event_type,event_name,*args
+source:line:b|a,event_type,event_name,*args
 ```
 
 Each line of the descriptor file represents an event which is correlated with the SUT. The reporter takes as input this descriptor and uses it to output the behavior of the SUT, this log file is then used by the monitor to assert if the behavior matches the modeled behavior.
@@ -94,6 +94,22 @@ The events are described by:
 4. Event type: current accepted event types are specified below.
 5. Event name: name used when reporting.
 6. *args: extra arguments used by certain events.
+
+### Event types
+The currently supported events are:
+1. checkpoint_reached: Represents arriving at a checkpoint.
+```csv
+source:10:b,checkpoint_reached,chk_0
+```
+2. task_started: The beginning of a task.
+```csv
+source:5:b,task_started,init
+```
+3. variable_value_assign: Check the value of a variable in current stack frame.
+```csv
+source:15:b,variable_value_assign,var_x,x
+```
+
 
 ## Contributing
 
