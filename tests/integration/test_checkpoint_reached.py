@@ -27,7 +27,7 @@ class TestCheckpointReached(unittest.TestCase):
         print("---------")
         print(f"Executing: {sut} output to: {log_path}")
         self.reporter.execute()
-        self.reporter.stop()
+        self.reporter.close()
 
 
 if __name__ == "__main__":
