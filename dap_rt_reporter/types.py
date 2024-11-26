@@ -25,6 +25,7 @@ class ReportEvent(StrEnum):
 
     CHECKPOINT_REACHED = "checkpoint_reached"
     VARIABLE_VALUE_ASSIGN = "variable_value_assign"
+    TASK_STARTED = "task_started"
 
 
 class ReportEventType(StrEnum):

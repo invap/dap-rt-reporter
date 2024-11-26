@@ -8,27 +8,13 @@ from dap_rt_reporter.types import DAPMessage
 def write_checkpoint_reached(timestamp, event, csv_writer, debugger_connection):
     csv_writer.writerow([timestamp, event["type"], event["sub_type"], event["name"]])
 
-
-def parse_dap_response(response: bytes):
-    """Converts DAP response to dictionary form.
-    Assumes complete message.
-    """
-    response_list = []
-    if response is not None:
-        while b"\r\n\r\n" in response:
-            length, response = response.split(b"\r\n\r\n", 1)
-
-            length = int(length.split(b":")[1])
-            response_list.append(json.loads(response[:length]))
-            response = response[length:]
-
-    return response_list
-
+def write_task_started(timestamp, event, csv_writer, debugger_connection):
+    csv_writer.writerow([timestamp, event["type"], event["sub_type"], event["name"]])
 
 def write_variable_value_assign(timestamp, event, csv_writer, debugger_connection):
     result = None
     encoded_response = debugger_connection.evaluate(event["args"]["variable"])
-    #encoded_response = debugger_connection.evaluate("_x")
+    # encoded_response = debugger_connection.evaluate("_x")
     while result is None:
         response_list = parse_dap_response(encoded_response)
         encoded_response = b""
@@ -48,3 +34,18 @@ def write_variable_value_assign(timestamp, event, csv_writer, debugger_connectio
     csv_writer.writerow(
         [timestamp, event["type"], event["sub_type"], event["name"], result]
     )
+
+def parse_dap_response(response: bytes):
+    """Converts DAP response to dictionary form.
+    Assumes complete message.
+    """
+    response_list = []
+    if response is not None:
+        while b"\r\n\r\n" in response:
+            length, response = response.split(b"\r\n\r\n", 1)
+
+            length = int(length.split(b":")[1])
+            response_list.append(json.loads(response[:length]))
+            response = response[length:]
+
+    return response_list

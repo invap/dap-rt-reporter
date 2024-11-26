@@ -2,15 +2,16 @@
 # SPDX-License-Identifier: AGPL-3.0-or-later
 
 import csv
-import json
 import time
 
 from dap_rt_reporter.connection_wrapper import ConnectionWrapper
 from dap_rt_reporter.types import DAPEvent, DAPMessage, ReportEvent, ReportEventType
 from dap_rt_reporter.listener import Listener
-from dap_rt_reporter.listener_functions import (
+from dap_rt_reporter.funcs import (
     write_checkpoint_reached,
     write_variable_value_assign,
+    write_task_started,
+    parse_dap_response,
 )
 
 
@@ -46,8 +47,8 @@ class Reporter:
         encoded_response = self.debugger_connection.launch()
         terminated = False
         while not terminated:
-            response_list = self.parse_dap_response(encoded_response)
-            encoded_response = None
+            response_list = parse_dap_response(encoded_response)
+            encoded_response = b""
 
             # Logic to control program execution
             for response in response_list:
@@ -66,28 +67,12 @@ class Reporter:
                 elif response["type"] == DAPMessage.RESPONSE:
                     pass
 
-            if encoded_response is None:
+            if not encoded_response:
                 encoded_response = self.debugger_connection.idle()
 
         report_file.close()
 
         return terminated
-
-    def parse_dap_response(self, response: bytes):
-        """Converts DAP response to dictionary form.
-        Assumes complete message.
-        """
-
-        response_list = []
-        if response is not None:
-            while b"\r\n\r\n" in response:
-                length, response = response.split(b"\r\n\r\n", 1)
-
-                length = int(length.split(b":")[1])
-                response_list.append(json.loads(response[:length]))
-                response = response[length:]
-
-        return response_list
 
     def _set_up(self):
         """Sets breakpoints and gives the events to listener."""
@@ -142,7 +127,7 @@ class Reporter:
             # Read all responses until verification fails, output all stdout
             breakpoint_verification = False
             while not breakpoint_verification:
-                response_list = self.parse_dap_response(encoded_response)
+                response_list = parse_dap_response(encoded_response)
                 for response in response_list:
                     if (
                         response["type"] == DAPMessage.RESPONSE
@@ -174,6 +159,21 @@ class Reporter:
         }
         self.events.append(new_checkpoint)
 
+    def set_task_started(
+        self, source_path: str, line: int, before: bool, ts_name
+    ) -> None:
+        new_ts = {
+            "source_path": source_path,
+            "line": line,
+            "before": before,
+            "name": ts_name,
+            "type": ReportEventType.PROCESS_EVENT,
+            "sub_type": ReportEvent.TASK_STARTED,
+            "args": {},
+            "functions": [write_task_started],
+        }
+        self.events.append(new_ts)
+
     def set_variable_value_assign(
         self, source_path: str, line: int, before: bool, vva_name: str, variable: str
     ) -> None:
@@ -187,7 +187,6 @@ class Reporter:
             "args": {"variable": variable},
             "functions": [write_variable_value_assign],
         }
-
         self.events.append(new_vva)
 
     def stop(self):
