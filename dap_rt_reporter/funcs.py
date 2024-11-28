@@ -5,10 +5,7 @@ import json
 from dap_rt_reporter.types import DAPMessage
 
 
-def write_checkpoint_reached(timestamp, event, csv_writer, debugger_connection):
-    csv_writer.writerow([timestamp, event["type"], event["sub_type"], event["name"]])
-
-def write_task_started(timestamp, event, csv_writer, debugger_connection):
+def write_process_event(timestamp, event, csv_writer, debugger_connection):
     csv_writer.writerow([timestamp, event["type"], event["sub_type"], event["name"]])
 
 def write_variable_value_assign(timestamp, event, csv_writer, debugger_connection):

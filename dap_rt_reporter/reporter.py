@@ -8,9 +8,8 @@ from dap_rt_reporter.connection_wrapper import ConnectionWrapper
 from dap_rt_reporter.types import DAPEvent, DAPMessage, ReportEvent, ReportEventType
 from dap_rt_reporter.listener import Listener
 from dap_rt_reporter.funcs import (
-    write_checkpoint_reached,
+    write_process_event,
     write_variable_value_assign,
-    write_task_started,
     parse_dap_response,
 )
 
@@ -80,6 +79,7 @@ class Reporter:
         # Create breakpoint locations
         breakpoint_locations = {}
         for event in self.events:
+            # Save breakpoint-event relationships
             event_values = {
                 "before": event["before"],
                 "name": event["name"],
@@ -90,13 +90,14 @@ class Reporter:
             }
             line = event["line"]
             source_path = event["source_path"]
-            if source_path not in breakpoint_locations:
-                breakpoint_locations[source_path] = {line: [event_values]}
-            else:
-                if line not in breakpoint_locations[source_path]:
-                    breakpoint_locations[source_path][line] = [event_values]
-                else:
+            if source_path in breakpoint_locations:
+                if line in breakpoint_locations[source_path]:
                     breakpoint_locations[source_path][line].append(event_values)
+                else:
+                    breakpoint_locations[source_path][line] = [event_values]
+            else:
+                breakpoint_locations[source_path] = {line: [event_values]}
+
         # Set breakpoints for each source
         breakpoint_id = 1
         breakpoint_id_table = {}
@@ -119,12 +120,13 @@ class Reporter:
             source = source_path[source_path.rfind("/") + 1 :]
             source_dap_form = {"name": source, "path": source_path}
 
+            # Set breakpoints and clear previous ones
             encoded_response = self.debugger_connection.set_breakpoints_source(
                 source_dap_form, lines_dap_form
             )
 
             # Check breakpoints verification
-            # Read all responses until verification fails, output all stdout
+            # Read all responses until verification is confirmed
             breakpoint_verification = False
             while not breakpoint_verification:
                 response_list = parse_dap_response(encoded_response)
@@ -155,7 +157,7 @@ class Reporter:
             "type": ReportEventType.PROCESS_EVENT,
             "sub_type": ReportEvent.CHECKPOINT_REACHED,
             "args": {},
-            "functions": [write_checkpoint_reached],
+            "functions": [write_process_event],
         }
         self.events.append(new_checkpoint)
 
@@ -170,9 +172,24 @@ class Reporter:
             "type": ReportEventType.PROCESS_EVENT,
             "sub_type": ReportEvent.TASK_STARTED,
             "args": {},
-            "functions": [write_task_started],
+            "functions": [write_process_event],
         }
         self.events.append(new_ts)
+
+    def set_task_finished(
+        self, source_path: str, line: int, before: bool, tf_name
+    ) -> None:
+        new_tf = {
+            "source_path": source_path,
+            "line": line,
+            "before": before,
+            "name": tf_name,
+            "type": ReportEventType.PROCESS_EVENT,
+            "sub_type": ReportEvent.TASK_FINISHED,
+            "args": {},
+            "functions": [write_process_event],
+        }
+        self.events.append(new_tf)
 
     def set_variable_value_assign(
         self, source_path: str, line: int, before: bool, vva_name: str, variable: str
@@ -189,5 +206,5 @@ class Reporter:
         }
         self.events.append(new_vva)
 
-    def stop(self):
+    def close(self):
         self.debugger_connection.close_connection()
