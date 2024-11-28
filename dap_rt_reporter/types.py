@@ -24,8 +24,9 @@ class ReportEvent(StrEnum):
     """Enum class contains the Reporter events currently supported"""
 
     CHECKPOINT_REACHED = "checkpoint_reached"
-    VARIABLE_VALUE_ASSIGN = "variable_value_assign"
     TASK_STARTED = "task_started"
+    TASK_FINISHED = "task_finished"
+    VARIABLE_VALUE_ASSIGN = "variable_value_assign"
 
 
 class ReportEventType(StrEnum):

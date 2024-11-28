@@ -32,7 +32,7 @@ class TestCheckpointReached(unittest.TestCase):
 
         print("---------")
         self.reporter.execute()
-        self.reporter.stop()
+        self.reporter.close()
 
 
 if __name__ == "__main__":

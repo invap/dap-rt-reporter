@@ -67,6 +67,13 @@ with open(config_file, "r") as workflow_file:
                     before=before,
                     ts_name=event_name
                 )
+            case ReportEvent.TASK_FINISHED:
+                reporter.set_task_finished(
+                    source_path=source_path,
+                    line=int(line),
+                    before=before,
+                    tf_name=event_name
+                )
             case ReportEvent.VARIABLE_VALUE_ASSIGN:
                 reporter.set_variable_value_assign(
                     source_path=source_path,
@@ -78,4 +85,4 @@ with open(config_file, "r") as workflow_file:
 
 reporter.execute()
 
-reporter.stop()
+reporter.close()
