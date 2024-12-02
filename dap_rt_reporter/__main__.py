@@ -46,13 +46,13 @@ with open(config_file, "r") as workflow_file:
         source_path, line, before = row[0].split(":")
         before = before == "b"
 
-        event_type = row[1]
+        event = row[1]
         event_name = row[2]
 
         args = []
         if len(row) > 3:
             args = row[3:]
-        match event_type:
+        match event:
             case ReportEvent.CHECKPOINT_REACHED:
                 reporter.set_checkpoint(
                     source_path=source_path,
@@ -82,6 +82,8 @@ with open(config_file, "r") as workflow_file:
                     vva_name=event_name,
                     variable=args[0],
                 )
+            case _:
+                raise RuntimeError(f"Event {event} is undefined.")
 
 reporter.execute()
 
