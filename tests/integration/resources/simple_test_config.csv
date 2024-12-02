@@ -1,5 +1,5 @@
-tests/integration/resources/simple_test/src/main.rs:8:b,variable_value_assign,var_x,x
-tests/integration/resources/simple_test/src/main.rs:8:b,task_started,init,
-tests/integration/resources/simple_test/src/main.rs:10:b,checkpoint_reached,chk_1,
-tests/integration/resources/simple_test/src/main.rs:13:b,variable_value_assign,var_x,x
-tests/integration/resources/simple_test/src/main.rs:15:b,task_finished,init,
+main.rs:10:b,task_started,loop
+main.rs:13:b,variable_value_assign,var_x,x
+main.rs:15:b,variable_value_assign,var_y,y
+main.rs:16:b,checkpoint_reached,chk_sleep
+main.rs:18:b,task_finished,loop
