@@ -2,16 +2,16 @@
 # SPDX-License-Identifier: AGPL-3.0-or-later
 
 import dap
-from dap_rt_reporter.gdb_handler import GDBHandler
+from dap_rt_reporter.stdio_handler import STDIOHandler
 
 
 class ConnectionWrapper:
-    """Wrapper for the connection between the DAP client and GDB."""
+    """Wrapper for the connection between the DAP client and debugger."""
 
     def __init__(self, executable: str, timeout=1.0) -> None:
         self.timeout = timeout
 
-        self.gdb_handler = GDBHandler(executable, ["gdb", "-i=dap", "-quiet"])
+        self.gdb_handler = STDIOHandler(executable, ["gdb", "-i=dap", "-quiet"])
         self.dap_client = dap.Client("DAP Client")
 
     def _send(self):
@@ -21,12 +21,12 @@ class ConnectionWrapper:
         return response
 
     def start(self) -> bytes:
-        """Start DAP-GDB connection."""
+        """Start DAP-Debugger connection."""
 
         return self._send()
 
     def launch(self) -> bytes:
-        """Sends launch request to GDB, begins program execution."""
+        """Sends launch request to debugger, begins program execution."""
 
         # Custom request to specify program in gdb launch
         # self.dap_client.send_request(
@@ -44,7 +44,7 @@ class ConnectionWrapper:
     def continue_execution(self):
         """Sends continue command at thread id 0."""
 
-        self.dap_client.continue_(thread_id=0)
+        self.dap_client.continue_(thread_id=0, single_thread=False)
         return self._send()
 
     def next(self):

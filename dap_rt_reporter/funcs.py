@@ -37,8 +37,9 @@ def parse_dap_response(response: bytes):
     Assumes complete message.
     """
     response_list = []
-    if response is not None:
-        while b"\r\n\r\n" in response:
+    if response:
+        print(response)
+        while b"\r\n\r\n{" in response:
             length, response = response.split(b"\r\n\r\n", 1)
 
             length = int(length.split(b":")[1])

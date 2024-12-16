@@ -8,10 +8,8 @@ import os
 DEFAULT_LAUNCH_COMMAND = ["gdb", "-i=dap", "-quiet"]
 
 
-class GDBHandler:
-    """GDBHandler handles the connection to GDB.
-    Can be used as standalone to send commands to gdb.
-    """
+class STDIOHandler:
+    """STDIO handles the connection to the debugger using standard input-output."""
 
     def __init__(
         self, executable_name: str, launch_command: list[str] = DEFAULT_LAUNCH_COMMAND
@@ -52,7 +50,7 @@ class GDBHandler:
         if self.gdb_subprocess.stdout is None:
             raise RuntimeError("Invalid state gdb subprocess is None")
 
-        #timeout_timer = time.time() + timeout
+        # timeout_timer = time.time() + timeout
 
         gdb_response = []
 
@@ -60,13 +58,12 @@ class GDBHandler:
         # e.g. reading the end of line of the message or any other frame detection technique
         #
         # Read from pipe until timeout
-        #while timeout_timer - time.time() > 0:
+        # while timeout_timer - time.time() > 0:
         self.gdb_subprocess.stdout.flush()
         encoded_output = self.gdb_subprocess.stdout.read()
 
         if encoded_output:
             gdb_response.append(encoded_output)
-
 
         # TODO: Check for alternative solution
         # Convert responses to single response
