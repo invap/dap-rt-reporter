@@ -66,5 +66,5 @@ class ConnectionWrapper:
         return self._send()
 
     def close_connection(self):
-        """Kill GDB subprocess."""
+        """Kill debugger subprocess."""
         self.stdio_handler.close()
