@@ -11,12 +11,12 @@ class ConnectionWrapper:
     def __init__(self, executable: str, timeout=1.0) -> None:
         self.timeout = timeout
 
-        self.gdb_handler = STDIOHandler(executable, ["gdb", "-i=dap", "-quiet"])
+        self.stdio_handler = STDIOHandler(executable, ["gdb", "-i=dap", "-quiet"])
         self.dap_client = dap.Client("DAP Client")
 
     def _send(self):
         command = self.dap_client.send()
-        response = self.gdb_handler.write(command, self.timeout)
+        response = self.stdio_handler.write(command, self.timeout)
 
         return response
 
@@ -28,7 +28,7 @@ class ConnectionWrapper:
     def launch(self) -> bytes:
         """Sends launch request to debugger, begins program execution."""
 
-        # Custom request to specify program in gdb launch
+        # Custom request to specify program in gdb/lldb launch
         # self.dap_client.send_request(
         #    command="launch", arguments={"program": executable_path}
         # )
@@ -56,7 +56,7 @@ class ConnectionWrapper:
     def idle(self):
         """Reads from buffer."""
 
-        response = self.gdb_handler._read()
+        response = self.stdio_handler._read()
         return response
 
     def evaluate(self, expression):
@@ -67,4 +67,4 @@ class ConnectionWrapper:
 
     def close_connection(self):
         """Kill GDB subprocess."""
-        self.gdb_handler.close()
+        self.stdio_handler.close()
