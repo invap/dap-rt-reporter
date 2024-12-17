@@ -65,7 +65,7 @@ reporter.set_checkpoint(
 # Set variable value assign event in line 8, reads the value of 'x'
 reporter.set_variable_value_assign(
                     source_path=source_path,
-                    line=8,
+                    line=12,
                     before=False,
                     vva_name="var_x",
                     variable="x"
