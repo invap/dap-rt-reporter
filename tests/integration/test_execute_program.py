@@ -13,21 +13,16 @@ from dap_rt_reporter.listener import Listener
 
 class TestExecuteProgram(unittest.TestCase):
     def test_start(self):
-        self.connection = ConnectionWrapper()
-        self.listener = Listener()
-        self.reporter = Reporter(self.connection, self.listener)
-
-        # Set main binary as executable, log file is not used
-        self.reporter.add_executable(
-            "tests/integration/resources/simple_test/target/debug/simple_test", 
-            "main_log_file.log"
+        self.reporter = Reporter(
+            executable_path="tests/integration/resources/simple_test/target/debug/simple_test",
+            execution_trace_log_path="execute.log"
             )
 
-        response = self.reporter.execute()
-        self.connection.close_connection()
+        terminate = self.reporter.execute()
+        self.reporter.close()
 
         # Checks if response contains a terminated event
-        self.assertTrue(response)
+        self.assertTrue(terminate)
 
 if __name__ == "__main__":
     unittest.main()
