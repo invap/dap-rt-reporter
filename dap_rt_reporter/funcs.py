@@ -38,7 +38,6 @@ def parse_dap_response(response: bytes):
     """
     response_list = []
     if response:
-        print(response)
         while b"\r\n\r\n{" in response:
             length, response = response.split(b"\r\n\r\n", 1)
 
