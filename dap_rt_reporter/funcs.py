@@ -33,9 +33,6 @@ def write_variable_value_assign(timestamp, event, csv_writer, debugger_connectio
 def evaluate_expression(expression, debugger_connection):
     """Evaluate expression in current context inside SUT."""
 
-    if ("{" and "}") in expression:
-        expression = re.findall(r"{(.*?)}", expression)[0]
-
     result = None
     encoded_response = debugger_connection.evaluate(expression)
     # encoded_response = debugger_connection.evaluate("_x")
@@ -63,7 +60,9 @@ def get_event_name(event_name_raw, debugger_connection):
 
     event_name = re.sub(
         r"{(.*?)}",
-        lambda match: evaluate_expression(match.group(), debugger_connection),
+        lambda match: evaluate_expression(
+            re.findall(r"{(.*?)}", match.group())[0], debugger_connection
+        ),
         event_name_raw,
     )
 
