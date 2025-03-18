@@ -20,18 +20,24 @@ Python library to configure, execute the SUT and then report the execution trace
     docker run -it -v$PWD:/home/workspace dap-rt-reporter-env
     ```
 
-    To execute the unit tests, in the container:
+    Once inside the container:
 
     ``` sh
-    poetry shell
-    python -m unittest discover -s tests/integration
+    poetry install
+    ```
+
+    To execute the unit tests:
+
+    ``` sh
+    poetry env activate
+    poetry run python -m unittest discover -s tests/integration
     ```
 
     To execute the program:
 
     ``` sh
-    poetry shell
-    python -m dap_rt_reporter\
+    poetry env activate
+    poetry run python -m dap_rt_reporter\
       --sut tests/integration/resources/simple_test/target/debug/simple_test \
       --desc tests/integration/resources/simple_test_config.csv --log execute.log
     ```
