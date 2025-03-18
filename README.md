@@ -160,6 +160,10 @@ The output format contains:
 1. EVENT_NAME: The name used to report the event.
 1. *ARGS: Extra arguments used for the event.
 
+## Complete work suite
+
+For more information on the complete work suite check [here.](SUITE.md)
+
 ## Contributing
 
 Contributions are what make the open source community such an amazing
