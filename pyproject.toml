@@ -3,7 +3,7 @@ name = "dap-rt-reporter"
 version = "0.1.0"
 description = "Library to configure, execute and report execution trace using DAP"
 authors = [
-  {name = "Alí Veizaga", email = "a.veizaga.0000@gmail.com"},
+  {name = "Alí Veizaga", email = "abveizaga@invap.com.ar"},
   {name = "Juan Ignacio Vaccarezza", email =  "jivaccarezza@invap.com.ar"},
 ]
 license = "SPDX-License-Identifier: AGPL-3.0-or-later"
