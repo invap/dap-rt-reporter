@@ -9,6 +9,8 @@ from dap_rt_reporter.types import DAPMessage
 
 
 class Event(ABC):
+    """Event template"""
+
     def __init__(self, source_path: str, line: int, before: bool, name: str):
         self.source_path = source_path
         self.line = line
@@ -75,7 +77,10 @@ class Event(ABC):
         pass
 
     def _set_type(self, type):
+        """Setter for event type."""
+
         self.type = type
 
     def _set_sub_type(self, sub_type):
+        """Setter for event sub type-"""
         self.sub_type = sub_type
