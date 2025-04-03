@@ -4,6 +4,7 @@
 import unittest
 
 from dap_rt_reporter.reporter import Reporter
+from dap_rt_reporter.event.checkpoint_reached_event import CheckpointReachedEvent
 
 
 class TestCheckpointReached(unittest.TestCase):
@@ -13,15 +14,21 @@ class TestCheckpointReached(unittest.TestCase):
 
         self.reporter = Reporter(sut, log_path)
 
-        self.reporter.set_checkpoint(
-            source_path="main.rs", line=7, before=True, checkpoint_name="chk_7"
+        self.reporter.set_event(
+            CheckpointReachedEvent(
+                source_path="main.rs", line=7, before=True, name="chk_7"
+            )
         )
 
-        self.reporter.set_checkpoint(
-            source_path="main.rs", line=9, before=False, checkpoint_name="chk_9"
+        self.reporter.set_event(
+            CheckpointReachedEvent(
+                source_path="main.rs", line=9, before=False, name="chk_9"
+            )
         )
-        self.reporter.set_checkpoint(
-            source_path="main.rs", line=11, before=False, checkpoint_name="chk_11"
+        self.reporter.set_event(
+            CheckpointReachedEvent(
+                source_path="main.rs", line=11, before=False, name="chk_11"
+            )
         )
 
         print("---------")
