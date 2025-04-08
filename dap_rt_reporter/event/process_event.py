@@ -6,11 +6,18 @@ from dap_rt_reporter.types import ReportEventType
 
 
 class ProcessEvent(Event):
+    """Process event template.
+    All current process events use the same report structure.
+    """
+
     def __init__(self, source_path, line, before, name):
         super().__init__(source_path, line, before, name)
         self._set_type(ReportEventType.PROCESS_EVENT)
 
     def report(self, timestamp, csv_writer, debugger_connection):
+        """Report a process event. The output format is: \n
+        [timestamp],process_event,[event_sub_type],[event_name]
+        """
         csv_writer.writerow(
             [
                 timestamp,

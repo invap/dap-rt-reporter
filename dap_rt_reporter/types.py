@@ -26,7 +26,12 @@ class ReportEvent(StrEnum):
     CHECKPOINT_REACHED = "checkpoint_reached"
     TASK_STARTED = "task_started"
     TASK_FINISHED = "task_finished"
-    VARIABLE_VALUE_ASSIGN = "variable_value_assign"
+    VARIABLE_VALUE_ASSIGNED = "variable_value_assigned"
+    COMPONENT_EVENT = "component_event"
+    CLOCK_START = "clock_start"
+    CLOCK_PAUSE = "clock_pause"
+    CLOCK_RESUME = "clock_resume"
+    CLOCK_RESET = "clock_reset"
 
 
 class ReportEventType(StrEnum):
@@ -34,3 +39,5 @@ class ReportEventType(StrEnum):
 
     PROCESS_EVENT = "process_event"
     STATE_EVENT = "state_event"
+    COMPONENT_EVENT = "component_event"
+    TIMED_EVENT = "timed_event"
