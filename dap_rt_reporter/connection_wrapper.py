@@ -15,6 +15,9 @@ class ConnectionWrapper:
         self.dap_client = dap.Client("DAP Client")
 
     def _send(self):
+        """Clears the DAP client buffer and writes the commands to the stdio pipe,
+        then return the response."""
+
         command = self.dap_client.send()
         response = self.stdio_handler.write(command, self.timeout)
 

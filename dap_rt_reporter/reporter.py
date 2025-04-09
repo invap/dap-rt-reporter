@@ -5,13 +5,9 @@ import csv
 import time
 
 from dap_rt_reporter.connection_wrapper import ConnectionWrapper
-from dap_rt_reporter.types import DAPEvent, DAPMessage, ReportEvent, ReportEventType
+from dap_rt_reporter.types import DAPEvent, DAPMessage
 from dap_rt_reporter.listener import Listener
-from dap_rt_reporter.funcs import (
-    write_process_event,
-    write_variable_value_assign,
-    parse_dap_response,
-)
+from dap_rt_reporter.event.event import Event
 
 
 class Reporter:
@@ -46,7 +42,7 @@ class Reporter:
         encoded_response = self.debugger_connection.launch()
         terminated = False
         while not terminated:
-            response_list = parse_dap_response(encoded_response)
+            response_list = Event.parse_dap_response(encoded_response)
             encoded_response = b""
 
             # Logic to control program execution
@@ -80,23 +76,15 @@ class Reporter:
         breakpoint_locations = {}
         for event in self.events:
             # Save breakpoint-event relationships
-            event_values = {
-                "before": event["before"],
-                "name": event["name"],
-                "sub_type": event["sub_type"],
-                "type": event["type"],
-                "args": event["args"],
-                "functions": event["functions"],
-            }
-            line = event["line"]
-            source_path = event["source_path"]
+            line = event.line
+            source_path = event.source_path
             if source_path in breakpoint_locations:
                 if line in breakpoint_locations[source_path]:
-                    breakpoint_locations[source_path][line].append(event_values)
+                    breakpoint_locations[source_path][line].append(event)
                 else:
-                    breakpoint_locations[source_path][line] = [event_values]
+                    breakpoint_locations[source_path][line] = [event]
             else:
-                breakpoint_locations[source_path] = {line: [event_values]}
+                breakpoint_locations[source_path] = {line: [event]}
 
         # Set breakpoints for each source
         breakpoint_id = 1
@@ -129,7 +117,7 @@ class Reporter:
             # Read all responses until verification is confirmed
             breakpoint_verification = False
             while not breakpoint_verification:
-                response_list = parse_dap_response(encoded_response)
+                response_list = Event.parse_dap_response(encoded_response)
                 for response in response_list:
                     if (
                         response["type"] == DAPMessage.RESPONSE
@@ -144,67 +132,10 @@ class Reporter:
 
                 encoded_response = self.debugger_connection.idle()
 
-    def set_checkpoint(
-        self, source_path: str, line: int, before: bool, checkpoint_name: str
-    ) -> None:
-        """Set a checkpoint_reached event at the specified location."""
+    def set_event(self, event: Event):
+        """Set new event to report."""
 
-        new_checkpoint = {
-            "source_path": source_path,
-            "line": line,
-            "before": before,
-            "name": checkpoint_name,
-            "type": ReportEventType.PROCESS_EVENT,
-            "sub_type": ReportEvent.CHECKPOINT_REACHED,
-            "args": {},
-            "functions": [write_process_event],
-        }
-        self.events.append(new_checkpoint)
-
-    def set_task_started(
-        self, source_path: str, line: int, before: bool, ts_name
-    ) -> None:
-        new_ts = {
-            "source_path": source_path,
-            "line": line,
-            "before": before,
-            "name": ts_name,
-            "type": ReportEventType.PROCESS_EVENT,
-            "sub_type": ReportEvent.TASK_STARTED,
-            "args": {},
-            "functions": [write_process_event],
-        }
-        self.events.append(new_ts)
-
-    def set_task_finished(
-        self, source_path: str, line: int, before: bool, tf_name
-    ) -> None:
-        new_tf = {
-            "source_path": source_path,
-            "line": line,
-            "before": before,
-            "name": tf_name,
-            "type": ReportEventType.PROCESS_EVENT,
-            "sub_type": ReportEvent.TASK_FINISHED,
-            "args": {},
-            "functions": [write_process_event],
-        }
-        self.events.append(new_tf)
-
-    def set_variable_value_assign(
-        self, source_path: str, line: int, before: bool, vva_name: str, variable: str
-    ) -> None:
-        new_vva = {
-            "source_path": source_path,
-            "line": line,
-            "before": before,
-            "name": vva_name,
-            "type": ReportEventType.STATE_EVENT,
-            "sub_type": ReportEvent.VARIABLE_VALUE_ASSIGN,
-            "args": {"variable": variable},
-            "functions": [write_variable_value_assign],
-        }
-        self.events.append(new_vva)
+        self.events.append(event)
 
     def close(self):
         self.debugger_connection.close_connection()

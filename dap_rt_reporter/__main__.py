@@ -7,6 +7,10 @@ import os
 
 from dap_rt_reporter.types import ReportEvent
 from dap_rt_reporter.reporter import Reporter
+from dap_rt_reporter.event.checkpoint_reached_event import CheckpointReachedEvent
+from dap_rt_reporter.event.task_started_event import TaskStartedEvent
+from dap_rt_reporter.event.task_finished_event import TaskFinishedEvent
+from dap_rt_reporter.event.variable_value_assigned_event import VariableValueAssignedEvent
 
 # Parser arguments
 parser = argparse.ArgumentParser(
@@ -54,33 +58,39 @@ with open(config_file, "r") as workflow_file:
             args = row[3:]
         match event:
             case ReportEvent.CHECKPOINT_REACHED:
-                reporter.set_checkpoint(
+                reporter.set_event(
+                    CheckpointReachedEvent(
                     source_path=source_path,
                     line=int(line),
                     before=before,
-                    checkpoint_name=event_name,
+                    name=event_name
+                    )
                 )
             case ReportEvent.TASK_STARTED:
-                reporter.set_task_started(
+                reporter.set_event(
+                    TaskStartedEvent(
                     source_path=source_path,
                     line=int(line),
                     before=before,
-                    ts_name=event_name
+                    name=event_name
+                    )
                 )
             case ReportEvent.TASK_FINISHED:
-                reporter.set_task_finished(
-                    source_path=source_path,
+                reporter.set_event(
+                    TaskFinishedEvent(source_path=source_path,
                     line=int(line),
                     before=before,
-                    tf_name=event_name
+                    name=event_name
+                    )
                 )
             case ReportEvent.VARIABLE_VALUE_ASSIGN:
-                reporter.set_variable_value_assign(
-                    source_path=source_path,
+                reporter.set_event(
+                    VariableValueAssignedEvent(source_path=source_path,
                     line=int(line),
                     before=before,
-                    vva_name=event_name,
-                    variable=args[0],
+                    name=event_name,
+                    expression=args[0]
+                    )
                 )
             case _:
                 raise RuntimeError(f"Event {event} is undefined.")
