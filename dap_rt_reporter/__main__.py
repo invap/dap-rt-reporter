@@ -10,7 +10,9 @@ from dap_rt_reporter.reporter import Reporter
 from dap_rt_reporter.event.checkpoint_reached_event import CheckpointReachedEvent
 from dap_rt_reporter.event.task_started_event import TaskStartedEvent
 from dap_rt_reporter.event.task_finished_event import TaskFinishedEvent
-from dap_rt_reporter.event.variable_value_assigned_event import VariableValueAssignedEvent
+from dap_rt_reporter.event.variable_value_assigned_event import (
+    VariableValueAssignedEvent,
+)
 from dap_rt_reporter.event.clock_start import ClockStartEvent
 from dap_rt_reporter.event.clock_pause import ClockPauseEvent
 from dap_rt_reporter.event.clock_reset import ClockResetEvent
@@ -65,36 +67,38 @@ with open(config_file, "r") as workflow_file:
             case ReportEvent.CHECKPOINT_REACHED:
                 reporter.set_event(
                     CheckpointReachedEvent(
-                    source_path=source_path,
-                    line=int(line),
-                    before=before,
-                    name=event_name
+                        source_path=source_path,
+                        line=int(line),
+                        before=before,
+                        name=event_name,
                     )
                 )
             case ReportEvent.TASK_STARTED:
                 reporter.set_event(
                     TaskStartedEvent(
-                    source_path=source_path,
-                    line=int(line),
-                    before=before,
-                    name=event_name
+                        source_path=source_path,
+                        line=int(line),
+                        before=before,
+                        name=event_name,
                     )
                 )
             case ReportEvent.TASK_FINISHED:
                 reporter.set_event(
-                    TaskFinishedEvent(source_path=source_path,
-                    line=int(line),
-                    before=before,
-                    name=event_name
+                    TaskFinishedEvent(
+                        source_path=source_path,
+                        line=int(line),
+                        before=before,
+                        name=event_name,
                     )
                 )
             case ReportEvent.VARIABLE_VALUE_ASSIGNED:
                 reporter.set_event(
-                    VariableValueAssignedEvent(source_path=source_path,
-                    line=int(line),
-                    before=before,
-                    name=event_name,
-                    expression=args[0]
+                    VariableValueAssignedEvent(
+                        source_path=source_path,
+                        line=int(line),
+                        before=before,
+                        name=event_name,
+                        expression=args[0],
                     )
                 )
             case ReportEvent.CLOCK_START:
@@ -112,7 +116,7 @@ with open(config_file, "r") as workflow_file:
                         source_path=source_path,
                         line=int(line),
                         before=before,
-                        name=event_name
+                        name=event_name,
                     )
                 )
             case ReportEvent.CLOCK_RESUME:
@@ -121,7 +125,7 @@ with open(config_file, "r") as workflow_file:
                         source_path=source_path,
                         line=int(line),
                         before=before,
-                        name=event_name
+                        name=event_name,
                     )
                 )
             case ReportEvent.CLOCK_RESET:
@@ -130,7 +134,7 @@ with open(config_file, "r") as workflow_file:
                         source_path=source_path,
                         line=int(line),
                         before=before,
-                        name=event_name
+                        name=event_name,
                     )
                 )
             case ReportEvent.COMPONENT_EVENT:
@@ -141,7 +145,7 @@ with open(config_file, "r") as workflow_file:
                         before=before,
                         name=event_name,
                         function_name=args[0],
-                        function_params=args[1:]
+                        function_params=args[1:],
                     )
                 )
             case _:
