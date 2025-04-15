@@ -1,5 +1,10 @@
-main.rs:10:b,task_started,loop
-main.rs:13:b,variable_value_assign,var_x,x
-main.rs:15:b,variable_value_assign,var_y,y
-main.rs:16:b,checkpoint_reached,chk_sleep
-main.rs:18:b,task_finished,loop
+main.rs:14:b,task_started,loop
+main.rs:17:b,variable_value_assigned,var_x,x
+main.rs:19:b,variable_value_assigned,var_y,y
+main.rs:20:b,checkpoint_reached,chk_sleep
+main.rs:23:b,task_finished,loop
+main.rs:21:b,component_event,component,component_func,x,y
+main.rs:14:b,clock_start,sleep_clk
+main.rs:14:b,clock_pause,sleep_clk
+main.rs:20:b,clock_reset,sleep_clk
+main.rs:21:b,clock_resume,sleep_clk
