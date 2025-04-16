@@ -18,7 +18,7 @@ fn main() {
         y *= 3;
         println!("Value of y: {}", y);
         sleep(Duration::from_secs(2));
-        component(x, y);
+        component_func(x, y);
     }
     println!("Finishing loop.");
 }

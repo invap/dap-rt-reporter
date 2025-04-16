@@ -1,3 +1,5 @@
+main.rs:13:b,variable_value_assigned,var_x,x
+main.rs:14:b,variable_value_assigned,var_y,y
 main.rs:14:b,task_started,loop
 main.rs:17:b,variable_value_assigned,var_x,x
 main.rs:19:b,variable_value_assigned,var_y,y
