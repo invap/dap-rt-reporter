@@ -9,8 +9,7 @@ import unittest
 import csv
 import subprocess
 
-from dap_rt_reporter.reporter import Reporter
-
+from dap_rt_reporter.types import ReportEventType, ReportEvent
 
 class TestCheckAllEvents(unittest.TestCase):
     def test_events(self):
@@ -35,16 +34,38 @@ class TestCheckAllEvents(unittest.TestCase):
                 conf_file,
                 "--log",
                 execution_log,
+                "-f"
             ]
         )
 
-        events_check = True
+        events = []
+
+        x = 1
+        y = 1
+        events.append([ReportEventType.STATE_EVENT, ReportEvent.VARIABLE_VALUE_ASSIGNED, "var_x", str(x)])
+        events.append([ReportEventType.STATE_EVENT, ReportEvent.VARIABLE_VALUE_ASSIGNED, "var_y", str(y)])
+        events.append([ReportEventType.TIMED_EVENT, ReportEvent.CLOCK_START, "sleep_clk"])
+        events.append([ReportEventType.TIMED_EVENT, ReportEvent.CLOCK_PAUSE, "sleep_clk"])
+        for i in range(10):
+            events.append([ReportEventType.PROCESS_EVENT, ReportEvent.TASK_STARTED, "loop"])
+            x *= 2
+            y *= 3
+            events.append([ReportEventType.STATE_EVENT, ReportEvent.VARIABLE_VALUE_ASSIGNED, "var_x", str(x)])
+            events.append([ReportEventType.STATE_EVENT, ReportEvent.VARIABLE_VALUE_ASSIGNED, "var_y", str(y)])
+            events.append([ReportEventType.PROCESS_EVENT, ReportEvent.CHECKPOINT_REACHED, "chk_sleep"])
+            events.append([ReportEventType.TIMED_EVENT, ReportEvent.CLOCK_RESET, "sleep_clk"])
+            events.append([ReportEventType.TIMED_EVENT, ReportEvent.CLOCK_RESUME, "sleep_clk"])
+            events.append([ReportEventType.COMPONENT_EVENT, "component", "component_func", str(x), str(y)])
+            events.append([ReportEventType.TIMED_EVENT, ReportEvent.CLOCK_PAUSE, "sleep_clk"])
+            events.append([ReportEventType.PROCESS_EVENT, ReportEvent.TASK_FINISHED, "loop"])
+
         with open(execution_log) as log:
             csv_reader = csv.reader(log)
+
+            it = 0
             for row in csv_reader:
-                print(row)
-
-
+                self.assertTrue(row[1:] == events[it])
+                it += 1
 
 if __name__ == "__main__":
     unittest.main()
