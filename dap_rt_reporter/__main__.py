@@ -21,12 +21,13 @@ from dap_rt_reporter.event.clock_reset import ClockResetEvent
 from dap_rt_reporter.event.clock_resume import ClockResumeEvent
 from dap_rt_reporter.event.component_event import ComponentEvent
 
+
 def read_toml(toml_path):
     with open(toml_path, "rb") as file:
         reporter_config = tomllib.load(file)["dap-rt-reporter"]
         sut = reporter_config["sut"]
         config_file = reporter_config["specification"]
-    
+
     return sut, config_file
 
 
@@ -41,7 +42,7 @@ def run_experiment(sut, config_file, log_path):
         raise RuntimeError(f"No file named {sut} exists.")
     if not os.path.isfile(config_file):
         raise RuntimeError(f"No file named {config_file} exists.")
-    
+
     os.makedirs(os.path.dirname(log_path), exist_ok=True)
     reporter = Reporter(sut, log_path)
 
@@ -167,8 +168,12 @@ run_parser.add_argument("--desc", help="configuration file", required=True)
 run_parser.add_argument("--log", help="log file to store report", required=True)
 run_parser.add_argument("-f", help="force log rewrite", action="store_true")
 
-toml_parser = subparsers.add_parser("toml", help="Configure dap-rt-reporter using toml files.")
-toml_parser.add_argument("toml", help="Configure all reporter options with a toml file.")
+toml_parser = subparsers.add_parser(
+    "toml", help="Configure dap-rt-reporter using toml files."
+)
+toml_parser.add_argument(
+    "toml", help="Configure all reporter options with a toml file."
+)
 
 args = parser.parse_args()
 
@@ -182,7 +187,13 @@ if args.command_name == "toml":
     # open file and run experiment
     if os.path.isfile(toml_path):
         sut, config_file = read_toml(toml_path)
-        log_path = "experiments/" + os.path.basename(config_file) + "/" + str(time.time()) + "/exe-report.log"
+        log_path = (
+            "experiments/"
+            + os.path.basename(config_file)
+            + "/"
+            + str(time.time())
+            + "/exe-report.log"
+        )
         run_experiment(sut, config_file, log_path)
     # explore folder and run all experiments
     else:
@@ -190,7 +201,13 @@ if args.command_name == "toml":
             for file in files:
                 if file.endswith(".toml"):
                     sut, config_file = read_toml(file)
-                    log_path = "experiments/" + os.path.basename(config_file) + "/" + str(time.time) + "/exe-report.log"
+                    log_path = (
+                        "experiments/"
+                        + os.path.basename(config_file)
+                        + "/"
+                        + str(time.time)
+                        + "/exe-report.log"
+                    )
                     run_experiment(sut, config_file, log_path)
 # run subcommand
 else:
@@ -200,6 +217,8 @@ else:
     force = args.f
 
     if os.path.isfile(log_path) and not force:
-        raise RuntimeError(f"Warning: {log_path} already exists, use -f to force rewrite.")
+        raise RuntimeError(
+            f"Warning: {log_path} already exists, use -f to force rewrite."
+        )
 
     run_experiment(sut, config_file, log_path)
