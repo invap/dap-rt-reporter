@@ -27,8 +27,9 @@ def read_toml(toml_path):
         reporter_config = tomllib.load(file)["dap-rt-reporter"]
         sut = reporter_config["sut"]
         config_file = reporter_config["specification"]
+        log_path = reporter_config["log_file"]
 
-    return sut, config_file
+    return sut, config_file, log_path
 
 
 def run_experiment(sut, config_file, log_path):
@@ -186,10 +187,10 @@ if args.command_name == "toml":
 
     # open file and run experiment
     if os.path.isfile(toml_path):
-        sut, config_file = read_toml(toml_path)
+        sut, config_file, log_path = read_toml(toml_path)
         log_path = (
-            "experiments/"
-            + os.path.basename(config_file)
+            log_path
+            + os.path.basename(toml_path)
             + "/"
             + str(time.time())
             + "/exe-report.log"
@@ -200,10 +201,10 @@ if args.command_name == "toml":
         for root, dirs, files in os.walk(toml_path):
             for file in files:
                 if file.endswith(".toml"):
-                    sut, config_file = read_toml(file)
+                    sut, config_file, log_path = read_toml(os.path.join(root, file))
                     log_path = (
-                        "experiments/"
-                        + os.path.basename(config_file)
+                        "experiments-out/"
+                        + os.path.basename(toml_path)
                         + "/"
                         + str(time.time)
                         + "/exe-report.log"
