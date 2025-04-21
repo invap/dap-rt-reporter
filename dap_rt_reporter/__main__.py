@@ -31,6 +31,18 @@ def read_toml(toml_path):
 
 
 def run_experiment(sut, config_file, log_path):
+    """
+    Run an experiment described in "config_file", with "sut" target and save report to "log_path".
+    If log_path does not exist, the file and path are created.
+    """
+
+    # Checks
+    if not os.path.isfile(sut):
+        raise RuntimeError(f"No file named {sut} exists.")
+    if not os.path.isfile(config_file):
+        raise RuntimeError(f"No file named {config_file} exists.")
+    
+    os.makedirs(os.path.dirname(log_path), exist_ok=True)
     reporter = Reporter(sut, log_path)
 
     # Read each line and add corresponding events
@@ -160,34 +172,33 @@ toml_parser.add_argument("toml", help="Configure all reporter options with a tom
 
 args = parser.parse_args()
 
-# toml override
+# toml subcommand
 if args.command_name == "toml":
     toml_path = args.toml
     # Check if path is valid
     if not (os.path.isfile(toml_path) or os.path.isdir(toml_path)):
         raise RuntimeError(f"No file or folder named {toml_path} exists.")
 
+    # open file and run experiment
     if os.path.isfile(toml_path):
         sut, config_file = read_toml(toml_path)
-        log_path = "experiments/" + config_file + "/" + str(time.time()) + "/exe-report.log"
+        log_path = "experiments/" + os.path.basename(config_file) + "/" + str(time.time()) + "/exe-report.log"
         run_experiment(sut, config_file, log_path)
+    # explore folder and run all experiments
     else:
         for root, dirs, files in os.walk(toml_path):
             for file in files:
                 if file.endswith(".toml"):
                     sut, config_file = read_toml(file)
-                    log_path = "experiments/" + config_file + "/" + str(time.time) + "/exe-report.log"
+                    log_path = "experiments/" + os.path.basename(config_file) + "/" + str(time.time) + "/exe-report.log"
                     run_experiment(sut, config_file, log_path)
+# run subcommand
 else:
     sut = args.sut
     config_file = args.desc
     log_path = args.log
     force = args.f
 
-    if not os.path.isfile(sut):
-        raise RuntimeError(f"No file named {sut} exists.")
-    if not os.path.isfile(config_file):
-        raise RuntimeError(f"No file named {config_file} exists.")
     if os.path.isfile(log_path) and not force:
         raise RuntimeError(f"Warning: {log_path} already exists, use -f to force rewrite.")
 
