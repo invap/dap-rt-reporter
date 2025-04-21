@@ -1,5 +1,5 @@
 name = "dap-rt-monitor-example-app"
-working_directory = "./sandbox/dap_rt_reporter-simple_test/spec/"
+working_directory = "./sandbox/dap_rt_reporter-simple_test/specification/"
 [process]
     format = "regex"
     structure = "(loop;chk)*"
