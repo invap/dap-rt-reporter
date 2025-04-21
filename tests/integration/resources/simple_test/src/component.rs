@@ -2,21 +2,20 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // Simple hello world used to test program execution
 
-pub struct component {
+pub struct Component {
     value: i32,
 }
 
-impl component {
-    /// Creates a new component with the specified initial value
+impl Component {
     pub fn new() -> Self {
-        component {
+        Component {
             value: 0,
         }
     }
 
     pub fn component_func(&mut self, x: i32, y: i32) -> i32 {
         self.value = x + y;
-        x + y
+        self.value
     }
 }
 
