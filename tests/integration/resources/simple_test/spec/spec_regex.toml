@@ -1,0 +1,59 @@
+name = "dap-rt-monitor-example-app"
+working_directory = "./sandbox/dap_rt_reporter-simple_test/spec/"
+[process]
+    format = "regex"
+    structure = "(loop;chk)*"
+
+    [[process.tasks]]
+        name = "loop"
+        preconditions = ["pre"]
+        postconditions = ["post", "no_prop"]
+        checkpoints = ["loop_inv_chk"]
+
+    [[process.checkpoints]]
+        name = "loop_inv_chk"
+        properties = ["i_in_bound", "no_prop"]
+    [[process.checkpoints]]
+        name = "chk"
+        properties = ["sleep_clk_bounds", "comp_sound"]
+
+    [[process.properties]]
+        name = "sleep_clk_bounds"
+        format = "py"
+        variables = "(sleep_clk:Clock Int)"
+        declarations = """time = 2000000
+tolerance = 0.1
+lower_bound = int(time * (1-tolerance))
+upper_bound = int(time * (1+tolerance))"""
+        formula = "((lower_bound <= sleep_clk) & (sleep_clk < upper_bound))"
+    [[process.properties]]
+        name = "pre"
+        file = "loopbody_pre.toml"       # local file.
+    [[process.properties]]
+        name = "no_prop"
+        format = "smt2"
+        formula = "(= 1 1)"
+    [[process.properties]]
+        name = "post"
+        file = "loopbody_post.toml"       # local file.
+    [[process.properties]]
+        name = "i_in_bound"
+        format = "smt2"
+        variables = "(var_i:State Int)"
+        formula = "(and (<= 0 var_i) (< var_i 10))"
+    [[process.properties]]
+        name = "comp_sound"
+        format = "smt2"
+        variables = "(var_x:State Int),(var_y:State Int),(value:Component Int)"
+        formula = "(= value (+ var_x var_y))"
+
+[components]
+    visual = true
+    location = "./rt_monitor/framework/components/dap_reporter_simple_test"
+    [[components.list]]
+        name = "component"
+        component_file = "simple_test.py"
+        component_name = "component"
+        visual_component_file = "simple_testVisual.py"       # the visual component is assumed to be in the same location as the component
+        visual_component_name = "simple_testVisual"
+        visual = true

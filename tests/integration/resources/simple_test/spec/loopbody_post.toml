@@ -1,0 +1,6 @@
+format = "smt2"
+variables = "(var_i:State Int),(var_x:State Int),(var_y:State Int)"
+formula = """(and
+    (= var_x (^ 2 (+ 1 var_i)))
+    (= var_y (^ 3 (+ 1 var_i)))
+)"""
