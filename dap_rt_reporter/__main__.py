@@ -147,30 +147,29 @@ parser = argparse.ArgumentParser(
     description="Tool to to configure, execute the SUT and then report the execution trace report",
     usage="python3 dap_rt_reporter/dap_reporter.py --sut path_to_sut --desc path_to_desc --log path_to_log",
 )
+subparsers = parser.add_subparsers(dest="command_name")
 
-parser.add_argument("--sut", help="binary of the program to report", required=True)
-parser.add_argument("--desc", help="configuration file", required=True)
-parser.add_argument("--log", help="log file to store report")
-parser.add_argument("-f", help="force log rewrite", action="store_true")
-parser.add_argument("--toml", help="Configure all reporter options with a toml file.")
+run_parser = subparsers.add_parser("run")
+run_parser.add_argument("--sut", help="binary of the program to report", required=True)
+run_parser.add_argument("--desc", help="configuration file", required=True)
+run_parser.add_argument("--log", help="log file to store report", required=True)
+run_parser.add_argument("-f", help="force log rewrite", action="store_true")
+
+toml_parser = subparsers.add_parser("toml", help="Configure dap-rt-reporter using toml files.")
+toml_parser.add_argument("toml", help="Configure all reporter options with a toml file.")
 
 args = parser.parse_args()
 
-sut = args.sut
-config_file = args.desc
-log_path = args.log
-force = args.f
-toml_path = args.toml    
-
 # toml override
-if toml_path:
+if args.command_name == "toml":
+    toml_path = args.toml
     # Check if path is valid
     if not (os.path.isfile(toml_path) or os.path.isdir(toml_path)):
         raise RuntimeError(f"No file or folder named {toml_path} exists.")
 
     if os.path.isfile(toml_path):
-        sut, config_file = read_toml()
-        log_path = "experiments/" + config_file + "/" + str(time.time) + "/exe-report.log"
+        sut, config_file = read_toml(toml_path)
+        log_path = "experiments/" + config_file + "/" + str(time.time()) + "/exe-report.log"
         run_experiment(sut, config_file, log_path)
     else:
         for root, dirs, files in os.walk(toml_path):
@@ -180,6 +179,11 @@ if toml_path:
                     log_path = "experiments/" + config_file + "/" + str(time.time) + "/exe-report.log"
                     run_experiment(sut, config_file, log_path)
 else:
+    sut = args.sut
+    config_file = args.desc
+    log_path = args.log
+    force = args.f
+
     if not os.path.isfile(sut):
         raise RuntimeError(f"No file named {sut} exists.")
     if not os.path.isfile(config_file):
