@@ -205,7 +205,7 @@ if args.command_name == "toml":
                 if file.endswith(".toml"):
                     sut, config_file, log_path = read_toml(os.path.join(root, file))
                     log_path = (
-                        "experiments-out/"
+                        log_path
                         + file
                         + "/"
                         + str(time.time())
