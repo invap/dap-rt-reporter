@@ -48,7 +48,7 @@ def run_experiment(sut, config_file, log_path):
         os.makedirs(os.path.dirname(log_path), exist_ok=True)
     reporter = Reporter(sut, log_path)
 
-
+    print(f"Now running {sut}, saving log to {log_path} \n")
     # Read each line and add corresponding events
     with open(config_file, "r") as workflow_file:
         workflow_reader = csv.reader(workflow_file, delimiter=",")
@@ -206,9 +206,9 @@ if args.command_name == "toml":
                     sut, config_file, log_path = read_toml(os.path.join(root, file))
                     log_path = (
                         "experiments-out/"
-                        + os.path.basename(toml_path)
+                        + file
                         + "/"
-                        + str(time.time)
+                        + str(time.time())
                         + "/exe-report.log"
                     )
                     run_experiment(sut, config_file, log_path)
