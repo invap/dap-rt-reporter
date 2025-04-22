@@ -44,8 +44,10 @@ def run_experiment(sut, config_file, log_path):
     if not os.path.isfile(config_file):
         raise RuntimeError(f"No file named {config_file} exists.")
 
-    os.makedirs(os.path.dirname(log_path), exist_ok=True)
+    if os.path.dirname(log_path):
+        os.makedirs(os.path.dirname(log_path), exist_ok=True)
     reporter = Reporter(sut, log_path)
+
 
     # Read each line and add corresponding events
     with open(config_file, "r") as workflow_file:
