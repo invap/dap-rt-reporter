@@ -35,7 +35,7 @@ def write_toml(toml_path, log_path):
     with open(toml_path, "r") as file:
         config = toml.load(file)
 
-    config["event_reports"] = {"name": "main", "file": log_path}
+    config["event_reports"] = [{"name": "main", "file": log_path}]
 
     with open(toml_path, "w") as file:
         toml.dump(config, file)
