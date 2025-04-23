@@ -4,7 +4,7 @@
 import csv
 import argparse
 import os
-import tomllib
+import toml
 import time
 
 from dap_rt_reporter.types import ReportEvent
@@ -23,14 +23,22 @@ from dap_rt_reporter.event.component_event import ComponentEvent
 
 
 def read_toml(toml_path):
-    with open(toml_path, "rb") as file:
-        reporter_config = tomllib.load(file)["dap-rt-reporter"]
+    with open(toml_path, "r") as file:
+        reporter_config = toml.load(file)["dap-rt-reporter"]
         sut = reporter_config["sut"]
         config_file = reporter_config["specification"]
         log_path = reporter_config["log_file"]
 
     return sut, config_file, log_path
 
+def write_toml(toml_path, log_path):
+    with open(toml_path, "r") as file:
+        config = toml.load(file)
+
+    config["event-reports"] = {"name": "main", "file": log_path}
+
+    with open(toml_path, "w") as file:
+        toml.dump(config, file)
 
 def run_experiment(sut, config_file, log_path):
     """
@@ -197,6 +205,7 @@ if args.command_name == "toml":
             + str(time.time())
             + "/exe-report.log"
         )
+        write_toml(toml_path, log_path)
         run_experiment(sut, config_file, log_path)
     # explore folder and run all experiments
     else:
@@ -211,6 +220,7 @@ if args.command_name == "toml":
                         + str(time.time())
                         + "/exe-report.log"
                     )
+                    write_toml(os.path.join(root, file), log_path)
                     run_experiment(sut, config_file, log_path)
 # run subcommand
 else:
