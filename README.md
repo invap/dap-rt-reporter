@@ -124,19 +124,19 @@ The currently supported events are:
     1. checkpoint_reached: Represents arriving at a checkpoint.
 
         ```csv
-        source:6:b,checkpoint_reached,chk_0
+        source:20:b,checkpoint_reached,loop_inv_chk
         ```
 
     1. task_started: Marks the beginning of a task.
 
         ```csv
-        source:8:b,task_started,init
+        source:16:b,task_started,loop
         ```
 
     1. task_finished: Marks the end of a task.
 
         ```csv
-        source:15:b,source:11:b,task_finished,init
+        source:22:b,task_finished,loop
         ```
 
 1. State events:
@@ -144,9 +144,8 @@ The currently supported events are:
     in current stack frame.
 
         ```csv
-        source:13:b,variable_value_assigned,var_x,x
+        source:17:b,variable_value_assigned,var_x,x
         ```
-
         It takes as an extra argument the variable or expression you want to evaluate.
 1. Timed events:
     1. clock_start: Start a clock which can be used to track time.
