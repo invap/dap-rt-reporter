@@ -114,36 +114,72 @@ The events are described by:
 1. Before|After: indicates if the event should be reported before or after line execution.
 1. EVENT: current accepted events are specified below.
 1. EVENT_NAME: name used when reporting.
-1. *ARGS: extra arguments used by certain events (currently only variable_value_assign).
+1. *ARGS: extra arguments used by certain events.
 
 ### Events
 
 The currently supported events are:
 
-1. checkpoint_reached: Represents arriving at a checkpoint.
+1. Process events:
+    1. checkpoint_reached: Represents arriving at a checkpoint.
 
-    ```csv
-    source:6:b,checkpoint_reached,chk_0
-    ```
+        ```csv
+        source:6:b,checkpoint_reached,chk_0
+        ```
 
-1. task_started: Marks the beginning of a task.
+    1. task_started: Marks the beginning of a task.
 
-    ```csv
-    source:8:b,task_started,init
-    ```
+        ```csv
+        source:8:b,task_started,init
+        ```
 
-1. task_finished: Marks the end of a task.
+    1. task_finished: Marks the end of a task.
 
-    ```csv
-    source:15:b,source:11:b,task_finished,init
-    ```
+        ```csv
+        source:15:b,source:11:b,task_finished,init
+        ```
 
-1. variable_value_assign: Check the value of a variable or expression
-in current stack frame.
+1. State events:
+    1. variable_value_assigned: Check the value of a variable or expression
+    in current stack frame.
 
-    ```csv
-    source:13:b,variable_value_assign,var_x,x
-    ```
+        ```csv
+        source:13:b,variable_value_assigned,var_x,x
+        ```
+
+        It takes as an extra argument the variable or expression you want to evaluate.
+1. Timed events:
+    1. clock_start: Start a clock which can be used to track time.
+
+        ```csv
+        source:14:b,clock_start,sleep_clk
+        ```
+
+    1. clock_pause: Pause an active clock.
+
+        ```csv
+        source:14:b,clock_pause,sleep_clk
+        ```
+
+    1. clock_resume: Resume a paused clock.
+
+        ```csv
+        source:25:b,clock_start,sleep_clk
+        ```
+
+    1. clock_reset: Reset a clock and start counting.
+
+        ```csv
+        source:22:b,clock_reset,sleep_clk
+        ```
+
+1. Component events:
+    1. component_event: Indicates a component function call. For more information on component events and digital twins please refer to the [rt-monitor](https://github.com/invap/rt-monitor).
+        
+        ```csv
+        source:20:b,component_event,component,component_func,x,y
+        ```
+        It takes as extra arguments the component function that is being called and the arguments of the call.
 
 The resulting log after running all above events looks like this:
 
