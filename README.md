@@ -49,6 +49,10 @@ programmatically, as shown below.
 
 ```python
 from dap_rt_reporter.reporter import Reporter
+from dap_rt_reporter.event.checkpoint_reached_event import CheckpointReachedEvent
+from dap_rt_reporter.event.variable_value_assigned_event import (
+    VariableValueAssignedEvent,
+)
 
 # Binary and log paths
 sut_path = "tests/integration/resources/simple_test/target/debug/simple_test"
@@ -60,22 +64,26 @@ reporter = Reporter(executable_path=sut_path,
 
 source_path = "tests/integration/resources/simple_test/src/main.rs"
 
-# Set checkpoint event in line 10
-reporter.set_checkpoint(
-                    source_path=source_path,
-                    line=10,
-                    before=True,
-                    checkpoint_name="test_checkpoint",
-                )
+# Set checkpoint event on line 12
+reporter.set_event(
+    CheckpointReachedEvent(
+        source_path=source_path,
+        line=12,
+        before=True,
+        name="test_checkpoint",
+    )
+)
 
-# Set variable value assign event in line 8, reads the value of 'x'
-reporter.set_variable_value_assign(
-                    source_path=source_path,
-                    line=12,
-                    before=False,
-                    vva_name="var_x",
-                    variable="x"
-                    )
+# Set variable value assign event on line 17, reads the value of 'x'
+reporter.set_event(
+    VariableValueAssignedEvent(
+        source_path=source_path,
+        line=17,
+        before=True,
+        name="var_x",
+        expression="x"
+    )
+)
 
 # Start program execution and reporting
 reporter.execute()
