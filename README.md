@@ -54,15 +54,14 @@ from dap_rt_reporter.event.variable_value_assigned_event import (
     VariableValueAssignedEvent,
 )
 
-# Binary and log paths
+# Binary, log paths and source
 sut_path = "tests/integration/resources/simple_test/target/debug/simple_test"
-log_path = "execute.log"
-
+execution_log = "execute.log"
+source_path = "tests/integration/resources/simple_test/src/main.rs
 # Initialize reporter
-reporter = Reporter(executable_path=sut_path,
-                    execution_trace_log_path=log_path)
-
-source_path = "tests/integration/resources/simple_test/src/main.rs"
+reporter = Reporter(
+    executable_path=sut_path, execution_trace_log_path=execution_log
+)
 
 # Set checkpoint event on line 12
 reporter.set_event(
@@ -81,13 +80,12 @@ reporter.set_event(
         line=17,
         before=True,
         name="var_x",
-        expression="x"
+        expression="x",
     )
 )
 
 # Start program execution and reporting
-reporter.execute()
-
+terminated = reporter.execute()
 reporter.close()
 ```
 
