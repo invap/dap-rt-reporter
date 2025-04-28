@@ -1,7 +1,7 @@
 import wx
 
 
-class componentVisual(wx.Frame):
+class simple_testVisual(wx.Frame):
     def __init__(self, parent, simple_test_component):
         super().__init__(None, title="ADC", style=wx.CAPTION & ~wx.RESIZE_BORDER)
         self.simple_test_component = simple_test_component

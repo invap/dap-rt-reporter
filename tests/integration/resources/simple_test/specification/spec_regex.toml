@@ -1,5 +1,5 @@
 name = "dap-rt-monitor-example-app"
-working_directory = "./sandbox/dap_rt_reporter-simple_test/specification/"
+working_directory = "/home/workspace/tests/integration/resources/simple_test/specification/"    # Path inside container
 [process]
     format = "regex"
     structure = "(loop;chk)*"
@@ -49,7 +49,7 @@ upper_bound = int(time * (1+tolerance))"""
 
 [components]
     visual = true
-    location = "./rt_monitor/framework/components/dap_reporter_simple_test"
+    location = "/home/workspace/tests/integration/resources/simple_test/rt_monitor_components/" # Path inside container
     [[components.list]]
         name = "component"
         component_file = "simple_test.py"

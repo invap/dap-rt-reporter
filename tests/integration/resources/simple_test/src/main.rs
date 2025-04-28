@@ -13,14 +13,14 @@ fn main() {
     let mut c = Component::new();
     println!("Starting loop.");
     for _i in 0..10 {
-        x *= 2;  // task_started,loopbody
+        x *= 2;
         println!("Value of x: {}", x);
         y *= 3;
         println!("Value of y: {}", y);
-        let z = c.component_func(x, y);  // checkpoint_reached,loop_inv_chk - component,component_func - task_finished,loopbody -- main.rs:20:b,component_event,component,component_func,x,y
+        let z = c.component_func(x, y);
         println!("{}", z);
         sleep(Duration::from_secs(2));
-        println!()  // checkpoint_reached,chk_sleep
+        println!();
     }
     println!("Finishing loop.");
 }
