@@ -186,13 +186,25 @@ The currently supported events are:
         ```
         It takes as extra arguments the component function that is being called and the arguments of the call.
 
-The resulting log after running all above events looks like this:
+After running the example project with simple_test_config.csv the output log should resemble:
 
 ```csv
-1732838404820600,process_event,checkpoint_reached,chk_0
-1732838404825209,process_event,task_started,init
-1732838404829541,process_event,task_finished,init
-1732838406839570,state_event,variable_value_assign,var_x,145
+1745842785066343,state_event,variable_value_assigned,var_x,1
+1745842785068949,state_event,variable_value_assigned,var_y,1
+1745842785070587,timed_event,clock_start,sleep_clk
+1745842785070587,timed_event,clock_pause,sleep_clk
+1745842785071511,state_event,variable_value_assigned,var_i,0
+1745842785071511,process_event,task_started,loop
+1745842785072929,state_event,variable_value_assigned,var_x,2
+1745842785074289,state_event,variable_value_assigned,var_y,3
+1745842785075630,process_event,checkpoint_reached,loop_inv_chk
+1745842785075630,component_event,component,component_func,2,3
+1745842785077140,process_event,task_finished,loop
+1745842785077140,timed_event,clock_reset,sleep_clk
+1745842787078188,timed_event,clock_pause,sleep_clk
+1745842787078188,process_event,checkpoint_reached,chk
+...
+
 ```
 
 The output format contains:
