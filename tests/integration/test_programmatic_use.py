@@ -18,7 +18,7 @@ class TestProgrammaticUse(unittest.TestCase):
     def test_programmatic_example(self):
         # Binary, log paths and source
         sut_path = "tests/integration/resources/simple_test/target/debug/simple_test"
-        execution_log = "execute.log"
+        execution_log = "tests/integration/programmatic.log"
         source_path = "tests/integration/resources/simple_test/src/main.rs"
 
         # Initialize reporter
