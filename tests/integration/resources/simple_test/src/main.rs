@@ -4,16 +4,23 @@
 
 use std::{thread::sleep, time::Duration};
 
+mod component;
+use crate::component::Component;
+
 fn main() {
     let mut x = 1;
     let mut y = 1;
+    let mut c = Component::new();
     println!("Starting loop.");
-    for _ in 0..10 {
+    for _i in 0..10 {
         x *= 2;
         println!("Value of x: {}", x);
         y *= 3;
         println!("Value of y: {}", y);
+        let z = c.component_func(x, y);
+        println!("{}", z);
         sleep(Duration::from_secs(2));
+        println!();
     }
     println!("Finishing loop.");
 }

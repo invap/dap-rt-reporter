@@ -49,37 +49,43 @@ programmatically, as shown below.
 
 ```python
 from dap_rt_reporter.reporter import Reporter
+from dap_rt_reporter.event.checkpoint_reached_event import CheckpointReachedEvent
+from dap_rt_reporter.event.variable_value_assigned_event import (
+    VariableValueAssignedEvent,
+)
 
-# Binary and log paths
+# Binary, log paths and source
 sut_path = "tests/integration/resources/simple_test/target/debug/simple_test"
-log_path = "execute.log"
-
+execution_log = "execute.log"
+source_path = "tests/integration/resources/simple_test/src/main.rs
 # Initialize reporter
-reporter = Reporter(executable_path=sut_path,
-                    execution_trace_log_path=log_path)
+reporter = Reporter(
+    executable_path=sut_path, execution_trace_log_path=execution_log
+)
 
-source_path = "tests/integration/resources/simple_test/src/main.rs"
+# Set checkpoint event on line 12
+reporter.set_event(
+    CheckpointReachedEvent(
+        source_path=source_path,
+        line=12,
+        before=True,
+        name="test_checkpoint",
+    )
+)
 
-# Set checkpoint event in line 10
-reporter.set_checkpoint(
-                    source_path=source_path,
-                    line=10,
-                    before=True,
-                    checkpoint_name="test_checkpoint",
-                )
-
-# Set variable value assign event in line 8, reads the value of 'x'
-reporter.set_variable_value_assign(
-                    source_path=source_path,
-                    line=12,
-                    before=False,
-                    vva_name="var_x",
-                    variable="x"
-                    )
+# Set variable value assign event on line 17, reads the value of 'x'
+reporter.set_event(
+    VariableValueAssignedEvent(
+        source_path=source_path,
+        line=17,
+        before=True,
+        name="var_x",
+        expression="x",
+    )
+)
 
 # Start program execution and reporting
-reporter.execute()
-
+terminated = reporter.execute()
 reporter.close()
 ```
 
@@ -114,44 +120,91 @@ The events are described by:
 1. Before|After: indicates if the event should be reported before or after line execution.
 1. EVENT: current accepted events are specified below.
 1. EVENT_NAME: name used when reporting.
-1. *ARGS: extra arguments used by certain events (currently only variable_value_assign).
+1. *ARGS: extra arguments used by certain events.
 
 ### Events
 
 The currently supported events are:
 
-1. checkpoint_reached: Represents arriving at a checkpoint.
+1. Process events:
+    1. checkpoint_reached: Represents arriving at a checkpoint.
 
-    ```csv
-    source:6:b,checkpoint_reached,chk_0
-    ```
+        ```csv
+        source:20:b,checkpoint_reached,loop_inv_chk
+        ```
 
-1. task_started: Marks the beginning of a task.
+    1. task_started: Marks the beginning of a task.
 
-    ```csv
-    source:8:b,task_started,init
-    ```
+        ```csv
+        source:16:b,task_started,loop
+        ```
 
-1. task_finished: Marks the end of a task.
+    1. task_finished: Marks the end of a task.
 
-    ```csv
-    source:15:b,source:11:b,task_finished,init
-    ```
+        ```csv
+        source:22:b,task_finished,loop
+        ```
 
-1. variable_value_assign: Check the value of a variable or expression
-in current stack frame.
+1. State events:
+    1. variable_value_assigned: Check the value of a variable or expression
+    in current stack frame.
 
-    ```csv
-    source:13:b,variable_value_assign,var_x,x
-    ```
+        ```csv
+        source:17:b,variable_value_assigned,var_x,x
+        ```
+        It takes as an extra argument the variable or expression you want to evaluate.
+1. Timed events:
+    1. clock_start: Start a clock which can be used to track time.
 
-The resulting log after running all above events looks like this:
+        ```csv
+        source:14:b,clock_start,sleep_clk
+        ```
+
+    1. clock_pause: Pause an active clock.
+
+        ```csv
+        source:14:b,clock_pause,sleep_clk
+        ```
+
+    1. clock_resume: Resume a paused clock.
+
+        ```csv
+        source:25:b,clock_start,sleep_clk
+        ```
+
+    1. clock_reset: Reset a clock and start counting.
+
+        ```csv
+        source:22:b,clock_reset,sleep_clk
+        ```
+
+1. Component events:
+    1. component_event: Indicates a component function call. For more information on component events and digital twins please refer to the [rt-monitor](https://github.com/invap/rt-monitor).
+        
+        ```csv
+        source:20:b,component_event,component,component_func,x,y
+        ```
+        It takes as extra arguments the component function that is being called and the arguments of the call.
+
+After running the example project with simple_test_config.csv the output log should resemble:
 
 ```csv
-1732838404820600,process_event,checkpoint_reached,chk_0
-1732838404825209,process_event,task_started,init
-1732838404829541,process_event,task_finished,init
-1732838406839570,state_event,variable_value_assign,var_x,145
+1745842785066343,state_event,variable_value_assigned,var_x,1
+1745842785068949,state_event,variable_value_assigned,var_y,1
+1745842785070587,timed_event,clock_start,sleep_clk
+1745842785070587,timed_event,clock_pause,sleep_clk
+1745842785071511,state_event,variable_value_assigned,var_i,0
+1745842785071511,process_event,task_started,loop
+1745842785072929,state_event,variable_value_assigned,var_x,2
+1745842785074289,state_event,variable_value_assigned,var_y,3
+1745842785075630,process_event,checkpoint_reached,loop_inv_chk
+1745842785075630,component_event,component,component_func,2,3
+1745842785077140,process_event,task_finished,loop
+1745842785077140,timed_event,clock_reset,sleep_clk
+1745842787078188,timed_event,clock_pause,sleep_clk
+1745842787078188,process_event,checkpoint_reached,chk
+...
+
 ```
 
 The output format contains:

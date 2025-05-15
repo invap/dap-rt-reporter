@@ -7,16 +7,15 @@
 
 import unittest
 
-from dap_rt_reporter.connection_wrapper import ConnectionWrapper
 from dap_rt_reporter.reporter import Reporter
-from dap_rt_reporter.listener import Listener
+
 
 class TestExecuteProgram(unittest.TestCase):
     def test_start(self):
         self.reporter = Reporter(
             executable_path="tests/integration/resources/simple_test/target/debug/simple_test",
-            execution_trace_log_path="execute.log"
-            )
+            execution_trace_log_path="execute.log",
+        )
 
         terminate = self.reporter.execute()
         self.reporter.close()
@@ -24,6 +23,6 @@ class TestExecuteProgram(unittest.TestCase):
         # Checks if response contains a terminated event
         self.assertTrue(terminate)
 
+
 if __name__ == "__main__":
     unittest.main()
-
