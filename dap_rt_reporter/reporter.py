@@ -19,8 +19,9 @@ class Reporter:
         self,
         executable_path: str,
         execution_trace_log_path: str,
+        executable_args: str
     ) -> None:
-        self.debugger_connection = ConnectionWrapper(executable_path)
+        self.debugger_connection = ConnectionWrapper(executable_path, executable_args)
         self.listener = Listener()
 
         self.executable_path = executable_path

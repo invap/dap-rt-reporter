@@ -30,6 +30,7 @@ parser.add_argument("--sut", help="binary of the program to report", required=Tr
 parser.add_argument("--desc", help="configuration file", required=True)
 parser.add_argument("--log", help="log file to store report", required=True)
 parser.add_argument("-f", help="force log rewrite", action="store_true")
+parser.add_argument("--sut-args", help="add argument for SUT", nargs="+")
 
 args = parser.parse_args()
 
@@ -37,6 +38,7 @@ sut = args.sut
 config_file = args.desc
 log_path = args.log
 force = args.f
+sut_args = " ".join(args.sut_args) if args.sut_args else ""
 
 # Checks
 if not os.path.isfile(sut):
@@ -46,7 +48,7 @@ if not os.path.isfile(config_file):
 if os.path.isfile(log_path) and not force:
     raise RuntimeError(f"Warning: {log_path} already exists, use -f to force rewrite.")
 
-reporter = Reporter(sut, log_path)
+reporter = Reporter(sut, log_path, sut_args)
 
 # Read each line and add corresponding events
 with open(config_file, "r") as workflow_file:

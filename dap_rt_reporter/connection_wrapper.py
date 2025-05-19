@@ -8,10 +8,15 @@ from dap_rt_reporter.stdio_handler import STDIOHandler
 class ConnectionWrapper:
     """Wrapper for the connection between the DAP client and debugger."""
 
-    def __init__(self, executable: str, timeout=1.0) -> None:
+    def __init__(self, executable: str, executable_args: str, timeout=1.0) -> None:
         self.timeout = timeout
 
-        self.stdio_handler = STDIOHandler(executable, ["gdb", "-i=dap", "-quiet"])
+        if executable_args:
+            launch_command = ["gdb", "-i=dap", "-quiet", "--args", executable, executable_args]
+        else:
+            launch_command = ["gdb", "-i=dap", "-quiet", executable]
+            
+        self.stdio_handler = STDIOHandler(launch_command)
         self.dap_client = dap.Client("DAP Client")
 
     def _send(self):
