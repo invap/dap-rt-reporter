@@ -22,8 +22,12 @@ from dap_rt_reporter.event.component_event import ComponentEvent
 # Parser arguments
 parser = argparse.ArgumentParser(
     prog="dap_reporter",
-    description="Tool to to configure, execute the SUT and then report the execution trace report",
-    usage="python3 dap_rt_reporter/dap_reporter.py --sut path_to_sut --desc path_to_desc --log path_to_log",
+    description="Tool to configure, execute the SUT and then report the execution trace report",
+    usage="""
+        python3 -m dap_reporter.py --sut path_to_sut --desc path_to_desc --log path_to_log
+        If the log file already exists you can force rewrite with -f flag.
+        To pass arguments to the executable use --sut-args, for example --sut-args "-p 1234".
+        """,
 )
 
 parser.add_argument("--sut", help="binary of the program to report", required=True)
