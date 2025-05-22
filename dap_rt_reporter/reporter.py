@@ -40,6 +40,7 @@ class Reporter:
         self._set_up()
 
         # Start execution
+        print("Starting SUT execution")
         encoded_response = self.debugger_connection.launch()
         terminated = False
         while not terminated:
@@ -67,6 +68,7 @@ class Reporter:
                 encoded_response = self.debugger_connection.idle()
 
         report_file.close()
+        print("Closing reporter.")
 
         return terminated
 

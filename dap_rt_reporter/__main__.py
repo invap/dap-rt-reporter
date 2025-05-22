@@ -54,6 +54,7 @@ if os.path.isfile(log_path) and not force:
 
 reporter = Reporter(sut, log_path, sut_args)
 
+print("Reading configuration file...")
 # Read each line and add corresponding events
 with open(config_file, "r") as workflow_file:
     workflow_reader = csv.reader(workflow_file, delimiter=",")
