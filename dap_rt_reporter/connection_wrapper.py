@@ -10,11 +10,9 @@ class ConnectionWrapper:
 
     def __init__(self, executable: str, executable_args: str, timeout=1.0) -> None:
         self.timeout = timeout
+        self.executable_args = executable_args
 
-        if executable_args:
-            launch_command = ["gdb", "-i=dap", "-quiet", "--args", executable, executable_args]
-        else:
-            launch_command = ["gdb", "-i=dap", "-quiet", executable]
+        launch_command = ["gdb", "-i=dap", "--quiet", executable]
             
         self.stdio_handler = STDIOHandler(launch_command)
         self.dap_client = dap.Client("DAP Client")
@@ -37,10 +35,10 @@ class ConnectionWrapper:
         """Sends launch request to debugger, begins program execution."""
 
         # Custom request to specify program in gdb/lldb launch
-        # self.dap_client.send_request(
-        #    command="launch", arguments={"program": executable_path}
-        # )
-        self.dap_client.launch()
+        self.dap_client.send_request(
+           command="launch", arguments={"args": self.executable_args}
+        )
+        #self.dap_client.launch()
         return self._send()
 
     def set_breakpoints_source(self, source, breakpoints):
