@@ -9,11 +9,11 @@ import os
 class STDIOHandler:
     """STDIO handles the connection to the debugger using standard input-output."""
 
-    def __init__(self, executable_name: str, launch_command: list[str]):
+    def __init__(self, launch_command: list[str]):
         self.launch_command = launch_command
 
         self.debugger_subprocess = subprocess.Popen(
-            self.launch_command + [executable_name],
+            self.launch_command,
             shell=False,
             stdout=subprocess.PIPE,
             stdin=subprocess.PIPE,
