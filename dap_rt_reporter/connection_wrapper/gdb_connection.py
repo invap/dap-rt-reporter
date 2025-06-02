@@ -38,6 +38,13 @@ class GDBConnection(ConnectionWrapper):
             if partial_response:
                 self.response_buffer += partial_response
 
+    def set_up(self, set_up):
+        """GDB sequence to initiate program execution and debugging."""
+
+        self.initialize()
+        set_up()
+        self.configuration_done()
+        self.launch()
 
     def initialize(self):
         """Send initialize request."""

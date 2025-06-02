@@ -19,6 +19,9 @@ from dap_rt_reporter.event.clock_reset import ClockResetEvent
 from dap_rt_reporter.event.clock_resume import ClockResumeEvent
 from dap_rt_reporter.event.component_event import ComponentEvent
 
+from dap_rt_reporter.connection_wrapper.gdb_connection import GDBConnection
+from dap_rt_reporter.connection_wrapper.lldb_connection import LLDBConnection
+
 # Parser arguments
 parser = argparse.ArgumentParser(
     prog="dap_reporter",
@@ -29,6 +32,7 @@ parser = argparse.ArgumentParser(
 parser.add_argument("--sut", help="binary of the program to report", required=True)
 parser.add_argument("--desc", help="configuration file", required=True)
 parser.add_argument("--log", help="log file to store report", required=True)
+parser.add_argument("--debugger", help="select which debugger to use (lldb/gdb)", default="lldb", choices=["gdb", "lldb"])
 parser.add_argument("-f", help="force log rewrite", action="store_true")
 
 args = parser.parse_args()
@@ -37,6 +41,7 @@ sut = args.sut
 config_file = args.desc
 log_path = args.log
 force = args.f
+debugger = args.debugger
 
 # Checks
 if not os.path.isfile(sut):
@@ -46,7 +51,8 @@ if not os.path.isfile(config_file):
 if os.path.isfile(log_path) and not force:
     raise RuntimeError(f"Warning: {log_path} already exists, use -f to force rewrite.")
 
-reporter = Reporter(sut, log_path)
+connection = LLDBConnection(sut, "") if debugger == "lldb" else GDBConnection(sut, "")
+reporter = Reporter(log_path, connection)
 
 # Read each line and add corresponding events
 with open(config_file, "r") as workflow_file:

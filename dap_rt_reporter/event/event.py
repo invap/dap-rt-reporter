@@ -35,8 +35,8 @@ class Event(ABC):
         """Evaluate expression in current context inside SUT."""
 
         debugger_connection.stack_trace(thread_id)
-        frame_id = ""
-        while not frame_id:
+        frame_id = None
+        while frame_id is None:
             response = debugger_connection.get_response()
             response = self.parse_dap_response(response)
 
@@ -46,9 +46,9 @@ class Event(ABC):
             ):
                 frame_id = response["body"]["stackFrames"][0]["id"]
 
+
         result = None
         debugger_connection.evaluate(expression, frame_id)
-        # encoded_response = debugger_connection.evaluate("_x")
         while result is None:
             response = debugger_connection.get_response()
             response = self.parse_dap_response(response)

@@ -4,7 +4,7 @@
 import csv
 import time
 
-from dap_rt_reporter.connection_wrapper import ConnectionWrapper
+from dap_rt_reporter.connection_wrapper.connection_wrapper import ConnectionWrapper
 from dap_rt_reporter.types import DAPEvent, DAPMessage
 from dap_rt_reporter.listener import Listener
 from dap_rt_reporter.event.event import Event
@@ -31,14 +31,15 @@ class Reporter:
     def execute(self):
         """Begins program execution and report."""
 
+        print("Starting...")
+
+        # Open file writer
         report_file = open(self.execution_trace_log_path, "w")
         csv_writer = csv.writer(report_file, delimiter=",")
 
-        self.debugger_connection.start()
-        self._set_up()
+        self.debugger_connection.set_up(self._set_up)
 
         # Start execution
-        encoded_response = self.debugger_connection.launch()
         terminated = False
         while not terminated:
             response = self.debugger_connection.get_response()
@@ -105,7 +106,7 @@ class Reporter:
             source_dap_form = {"name": source, "path": source_path}
 
             # Set breakpoints and clear previous ones
-            encoded_response = self.debugger_connection.set_breakpoints_source(
+            self.debugger_connection.set_breakpoints_source(
                 source_dap_form, lines_dap_form
             )
 
@@ -113,20 +114,19 @@ class Reporter:
             # Read all responses until verification is confirmed
             breakpoint_verification = False
             while not breakpoint_verification:
-                response_list = Event.parse_dap_response(encoded_response)
-                for response in response_list:
-                    if (
-                        response["type"] == DAPMessage.RESPONSE
-                        and response["command"] == "setBreakpoints"
-                    ):
-                        for breakpoint in response["body"]["breakpoints"]:
-                            if not breakpoint["verified"]:
-                                raise RuntimeError(
-                                    f"Breakpoint verification failed: \nSource: {breakpoint_id_table[str(breakpoint["id"])]["source_path"]} \nLine: {breakpoint_id_table[str(breakpoint["id"])]["line"]}"
-                                )
-                        breakpoint_verification = True
+                response = self.debugger_connection.get_response()
+                response = Event.parse_dap_response(response)
 
-                encoded_response = self.debugger_connection.idle()
+                if (
+                    response["type"] == DAPMessage.RESPONSE
+                    and response["command"] == "setBreakpoints"
+                ):
+                    for breakpoint in response["body"]["breakpoints"]:
+                        if not breakpoint["verified"]:
+                            raise RuntimeError(
+                                f"Breakpoint verification failed: \nSource: {breakpoint_id_table[str(breakpoint['id'])]['source_path']} \nLine: {breakpoint_id_table[str(breakpoint['id'])]['line']}"
+                            )
+                    breakpoint_verification = True
 
     def set_event(self, event: Event):
         """Set new event to report."""
@@ -134,4 +134,4 @@ class Reporter:
         self.events.append(event)
 
     def close(self):
-        self.debugger_connection.close_connection()
+        self.debugger_connection.close()

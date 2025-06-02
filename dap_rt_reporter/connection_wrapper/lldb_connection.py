@@ -36,6 +36,12 @@ class LLDBConnection(ConnectionWrapper):
             if partial_response:
                 self.response_buffer += partial_response
 
+    def set_up(self, set_up):
+        self.initialize()
+        self.launch()
+        set_up()
+        self.configuration_done()
+
     def initialize(self):
         self._send()
 
