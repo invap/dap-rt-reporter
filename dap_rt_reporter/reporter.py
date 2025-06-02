@@ -41,28 +41,25 @@ class Reporter:
         encoded_response = self.debugger_connection.launch()
         terminated = False
         while not terminated:
-            response_list = Event.parse_dap_response(encoded_response)
-            encoded_response = b""
+            response = self.debugger_connection.get_response()
+            response = Event.parse_dap_response(response)
 
             # Logic to control program execution
-            for response in response_list:
-                if response["type"] == DAPMessage.EVENT:
-                    if response["event"] == DAPEvent.STOPPED:
-                        if response["body"]["reason"] == "breakpoint":
-                            self.listener.handle_response(
-                                int(1e6 * time.time()),
-                                response,
-                                csv_writer,
-                                self.debugger_connection,
-                            )
-                        encoded_response = self.debugger_connection.continue_execution()
-                    elif response["event"] == DAPEvent.TERMINATED:
-                        terminated = True
-                elif response["type"] == DAPMessage.RESPONSE:
-                    pass
-
-            if not encoded_response:
-                encoded_response = self.debugger_connection.idle()
+            if response["type"] == DAPMessage.EVENT:
+                if response["event"] == DAPEvent.STOPPED:
+                    if response["body"]["reason"] == "breakpoint":
+                        self.listener.handle_response(
+                            int(1e6 * time.time()),
+                            response,
+                            csv_writer,
+                            self.debugger_connection,
+                            True
+                        )
+                        self.debugger_connection.continue_execution()
+                elif response["event"] == DAPEvent.TERMINATED:
+                    terminated = True
+            elif response["type"] == DAPMessage.RESPONSE:
+                pass
 
         report_file.close()
 
