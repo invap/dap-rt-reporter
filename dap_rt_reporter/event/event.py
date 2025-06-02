@@ -24,48 +24,53 @@ class Event(ABC):
         """Converts DAP response to dictionary form.
         Assumes complete message.
         """
-        response_list = []
-        if response:
-            while b"\r\n\r\n{" in response:
-                length, response = response.split(b"\r\n\r\n", 1)
+        if b"\r\n\r\n{" in response:
+            length, response = response.split(b"\r\n\r\n", 1)
+            length = int(length.split(b":")[1])
+            return json.loads(response[:length])
+        else:
+            raise RuntimeError(f"Incomplete response. \nResponse: {response}")
 
-                length = int(length.split(b":")[1])
-                response_list.append(json.loads(response[:length]))
-                response = response[length:]
-
-        return response_list
-
-    def evaluate_expression(self, expression, debugger_connection):
+    def evaluate_expression(self, expression, thread_id, debugger_connection):
         """Evaluate expression in current context inside SUT."""
 
+        debugger_connection.stack_trace(thread_id)
+        frame_id = ""
+        while not frame_id:
+            response = debugger_connection.get_response()
+            response = self.parse_dap_response(response)
+
+            if (
+                response["type"] == DAPMessage.RESPONSE
+                and response["command"] == "stackTrace"
+            ):
+                frame_id = response["body"]["stackFrames"][0]["id"]
+
         result = None
-        encoded_response = debugger_connection.evaluate(expression)
+        debugger_connection.evaluate(expression, frame_id)
         # encoded_response = debugger_connection.evaluate("_x")
         while result is None:
-            response_list = self.parse_dap_response(encoded_response)
-            encoded_response = b""
+            response = debugger_connection.get_response()
+            response = self.parse_dap_response(response)
 
-            for response in response_list:
-                if (
-                    response["type"] == DAPMessage.RESPONSE
-                    and response["command"] == "evaluate"
-                ):
-                    if response["success"]:
-                        result = response["body"]["result"]
-                    else:
-                        raise RuntimeError(response["message"])
-            if not encoded_response:
-                encoded_response = debugger_connection.idle()
+            if (
+                response["type"] == DAPMessage.RESPONSE
+                and response["command"] == "evaluate"
+            ):
+                if response["success"]:
+                    result = response["body"]["result"]
+                else:
+                    raise RuntimeError(response["message"])
 
         return result
 
-    def _get_event_name(self, debugger_connection):
+    def _get_event_name(self, thread_id, debugger_connection):
         """Evaluate expressions inside the event name."""
 
         event_name = re.sub(
             r"{(.*?)}",
             lambda match: self.evaluate_expression(
-                re.findall(r"{(.*?)}", match.group())[0], debugger_connection
+                re.findall(r"{(.*?)}", match.group())[0], thread_id, debugger_connection
             ),
             self.name,
         )

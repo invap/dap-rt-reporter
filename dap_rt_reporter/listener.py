@@ -7,23 +7,15 @@ class Listener:
     def __init__(self) -> None:
         self.events = {}
 
-    def handle_response(self, timestamp, response, csv_writer, debugger_connection):
+    def handle_response(self, timestamp: int, response: dict, csv_writer, debugger_connection, before: bool):
         """Listens to responses from debugger and gives instructions to reporter."""
-        breakpoint_id = response["body"]["hitBreakpointIds"][0]
-        # Before events
-        for event in self.events[breakpoint_id]["b"]:
-            event.report(timestamp, csv_writer, debugger_connection)
-        # After events
-        if len(self.events[breakpoint_id]["a"]):
-            encoded_response = debugger_connection.next()
-            
-            # Wait until step is completed
-            # TODO: Check if timeout or other checks are necessary
-            while b"stopped" not in encoded_response:
-                encoded_response = debugger_connection.idle()
 
-            for event in self.events[breakpoint_id]["a"]:
-                event.report(timestamp, csv_writer, debugger_connection)
+        before = "b" if before else "a"
+
+        breakpoint_id = response["body"]["hitBreakpointIds"][0]
+        thread_id = response["body"]["threadId"]
+        for event in self.events[breakpoint_id][before]:
+            event.report(timestamp, csv_writer, debugger_connection, thread_id)
 
     def add_event(self, breakpoint_id, event: Event):
         """Adds event to listen list, uses breakpoint id as identifier."""

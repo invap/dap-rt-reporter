@@ -12,7 +12,7 @@ class VariableValueAssignedEvent(StateEvent):
         self._set_sub_type(ReportEvent.VARIABLE_VALUE_ASSIGNED)
         self.expression = expression
 
-    def report(self, timestamp, csv_writer, debugger_connection):
+    def report(self, timestamp, csv_writer, debugger_connection, thread_id):
         """Report a variable_value_assigned event. The output format is: \n
         [timestamp],state_event,variable_value_assigned,[event_name],[evaluated_expression]
         """
@@ -22,7 +22,7 @@ class VariableValueAssignedEvent(StateEvent):
                 timestamp,
                 self.type,
                 self.sub_type,
-                self._get_event_name(debugger_connection),
-                self.evaluate_expression(self.expression, debugger_connection)
+                self._get_event_name(thread_id, debugger_connection),
+                self.evaluate_expression(self.expression, thread_id, debugger_connection)
             ]
         )
