@@ -15,26 +15,26 @@ class LLDBConnection(ConnectionWrapper):
         self.stdio_handler = STDIOHandler(self.launch_command)
         self.dap_client = dap.Client("DAP Client")
 
+        self.response_buffer = b""
+
     def _send(self):
         command = self.dap_client.send()
         self.stdio_handler.write(command)
 
     def get_response(self) -> bytes:
-        response = b""
-        partial_response = self.stdio_handler.read()
+        while True:
+            if b"\r\n\r\n{" in self.response_buffer:
+                length, _ = self.response_buffer.split(b"\r\n\r\n", 1)
+                length = int(length.split(b":")[1]) + len(length + b"\r\n\r\n")
 
-        if partial_response:
-            self.response_buffer += partial_response
-
-        if b"\r\n\r\n{" in self.response_buffer:
-            length, _ = self.response_buffer.split(b"\r\n\r\n", 1)
-            length = int(length.split(b":")[1]) + len(length + b"\r\n\r\n")
-
-            if length <= len(self.response_buffer):
-                response = self.response_buffer[:length]
-                self.response_buffer = self.response_buffer[length:]
-
-        return response
+                if length <= len(self.response_buffer):
+                    response = self.response_buffer[:length]
+                    self.response_buffer = self.response_buffer[length:]
+                    return response
+            
+            partial_response = self.stdio_handler.read()
+            if partial_response:
+                self.response_buffer += partial_response
 
     def initialize(self):
         self._send()
@@ -45,7 +45,7 @@ class LLDBConnection(ConnectionWrapper):
         self.dap_client.send_request(
             command="launch",
             arguments={
-                "program": self.executable_path,
+                "program": self.executable,
                 "disableASLR": False,
                 "initCommands": ["settings set target.disable-aslr false"]
             },

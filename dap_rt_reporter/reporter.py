@@ -17,13 +17,12 @@ class Reporter:
 
     def __init__(
         self,
-        executable_path: str,
         execution_trace_log_path: str,
+        connection: ConnectionWrapper,
     ) -> None:
-        self.debugger_connection = ConnectionWrapper(executable_path)
+        self.debugger_connection = connection
         self.listener = Listener()
 
-        self.executable_path = executable_path
         self.execution_trace_log_path = execution_trace_log_path
 
         # Used for saving events

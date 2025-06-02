@@ -15,6 +15,8 @@ class GDBConnection(ConnectionWrapper):
         self.stdio_handler = STDIOHandler(self.launch_command + [executable])
         self.dap_client = dap.Client("DAP Client")
 
+        self.response_buffer = b""
+
     def _send(self):
         """Clears the DAP client buffer and writes the commands to the stdio pipe."""
 
@@ -22,21 +24,20 @@ class GDBConnection(ConnectionWrapper):
         self.stdio_handler.write(command)
 
     def get_response(self) -> bytes:
-        response = b""
-        partial_response = self.stdio_handler.read()
+        while True:
+            if b"\r\n\r\n{" in self.response_buffer:
+                length, _ = self.response_buffer.split(b"\r\n\r\n", 1)
+                length = int(length.split(b":")[1]) + len(length + b"\r\n\r\n")
 
-        if partial_response:
-            self.response_buffer += partial_response
+                if length <= len(self.response_buffer):
+                    response = self.response_buffer[:length]
+                    self.response_buffer = self.response_buffer[length:]
+                    return response
+            
+            partial_response = self.stdio_handler.read()
+            if partial_response:
+                self.response_buffer += partial_response
 
-        if b"\r\n\r\n{" in self.response_buffer:
-            length, _ = self.response_buffer.split(b"\r\n\r\n", 1)
-            length = int(length.split(b":")[1]) + len(length + b"\r\n\r\n")
-
-            if length <= len(self.response_buffer):
-                response = self.response_buffer[:length]
-                self.response_buffer = self.response_buffer[length:]
-
-        return response
 
     def initialize(self):
         """Send initialize request."""
@@ -90,6 +91,6 @@ class GDBConnection(ConnectionWrapper):
         self.dap_client.stack_trace(thread_id=thread_id)
         self._send()
 
-    def close_connection(self):
+    def close(self):
         """Kill debugger subprocess."""
         self.stdio_handler.close()
