@@ -10,7 +10,7 @@ class GDBConnection(ConnectionWrapper):
     def __init__(self, executable, executable_args):
         super().__init__(executable, executable_args)
 
-        self.launch_command = ["gdb", "-i=dap", "-quiet"]
+        self.launch_command = ["rust-gdb", "-i=dap", "-quiet"]
 
         self.stdio_handler = STDIOHandler(self.launch_command + [executable])
         self.dap_client = dap.Client("DAP Client")

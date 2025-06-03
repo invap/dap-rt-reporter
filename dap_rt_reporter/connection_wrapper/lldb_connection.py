@@ -5,12 +5,25 @@ import dap
 from dap_rt_reporter.connection_wrapper.stdio_handler import STDIOHandler
 from dap_rt_reporter.connection_wrapper.connection_wrapper import ConnectionWrapper
 
+import subprocess
+
 
 class LLDBConnection(ConnectionWrapper):
     def __init__(self, executable, executable_args):
         super().__init__(executable, executable_args)
 
         self.launch_command = ["lldb-dap-19"]
+
+        # Load the scripts to imitate rust-lldb
+        rustc_sysroot = (
+            subprocess.run(["rustc", "--print", "sysroot"], capture_output=True)
+            .stdout.decode()
+            .rstrip("\n")
+        )
+        self.script_import = (
+            f'command script import "{rustc_sysroot}/lib/rustlib/etc/lldb_lookup.py"'
+        )
+        self.commands_file = f"{rustc_sysroot}/lib/rustlib/etc/lldb_commands"
 
         self.stdio_handler = STDIOHandler(self.launch_command)
         self.dap_client = dap.Client("DAP Client")
@@ -31,7 +44,7 @@ class LLDBConnection(ConnectionWrapper):
                     response = self.response_buffer[:length]
                     self.response_buffer = self.response_buffer[length:]
                     return response
-            
+
             partial_response = self.stdio_handler.read()
             if partial_response:
                 self.response_buffer += partial_response
@@ -46,14 +59,17 @@ class LLDBConnection(ConnectionWrapper):
         self._send()
 
     def launch(self):
-
         # Custom launch request
         self.dap_client.send_request(
             command="launch",
             arguments={
                 "program": self.executable,
                 "disableASLR": False,
-                "initCommands": ["settings set target.disable-aslr false"]
+                "initCommands": [
+                    "settings set target.disable-aslr false",
+                    f"command script import {self.script_import}",
+                    f"command source -s 0 {self.commands_file}",
+                ],
             },
         )
         self._send()
