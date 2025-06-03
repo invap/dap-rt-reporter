@@ -61,8 +61,8 @@ class Event(ABC):
                     result = response["body"]["result"]
                 else:
                     raise RuntimeError(response["message"])
-
-        return result
+        
+        return result.encode("unicode-escape").decode()
 
     def _get_event_name(self, thread_id, debugger_connection):
         """Evaluate expressions inside the event name."""
