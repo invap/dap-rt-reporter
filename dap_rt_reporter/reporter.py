@@ -21,6 +21,7 @@ class Reporter:
         execution_trace_log_path: str,
         executable_args: str
     ) -> None:
+        print("ARGS:"+ executable_args)
         self.debugger_connection = ConnectionWrapper(executable_path, executable_args)
         self.listener = Listener()
 
@@ -49,6 +50,7 @@ class Reporter:
 
             # Logic to control program execution
             for response in response_list:
+                print(response)
                 if response["type"] == DAPMessage.EVENT:
                     if response["event"] == DAPEvent.STOPPED:
                         if response["body"]["reason"] == "breakpoint":
