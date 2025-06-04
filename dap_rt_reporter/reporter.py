@@ -54,7 +54,7 @@ class Reporter:
                             response,
                             csv_writer,
                             self.debugger_connection,
-                            True
+                            True,
                         )
                         self.debugger_connection.continue_execution()
                 elif response["event"] == DAPEvent.TERMINATED:
@@ -124,7 +124,9 @@ class Reporter:
                     for breakpoint in response["body"]["breakpoints"]:
                         if not breakpoint["verified"]:
                             raise RuntimeError(
-                                f"Breakpoint verification failed: \nSource: {breakpoint_id_table[str(breakpoint['id'])]['source_path']} \nLine: {breakpoint_id_table[str(breakpoint['id'])]['line']}"
+                                f"""Breakpoint verification failed: \n
+                                    Source: {breakpoint_id_table[str(breakpoint["id"])]["source_path"]} \n
+                                    Line: {breakpoint_id_table[str(breakpoint["id"])]["line"]}"""
                             )
                     breakpoint_verification = True
 
