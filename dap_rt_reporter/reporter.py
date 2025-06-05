@@ -19,14 +19,15 @@ class Reporter:
         self,
         executable_path: str,
         execution_trace_log_path: str,
-        executable_args: str
+        executable_args: str,
+        timeout: int
     ) -> None:
-        print("ARGS:"+ executable_args)
         self.debugger_connection = ConnectionWrapper(executable_path, executable_args)
         self.listener = Listener()
 
         self.executable_path = executable_path
         self.execution_trace_log_path = execution_trace_log_path
+        self.timeout = timeout
 
         # Used for saving events
         self.events = []
@@ -44,13 +45,13 @@ class Reporter:
         print("Starting SUT execution")
         encoded_response = self.debugger_connection.launch()
         terminated = False
+        start_time = time.time()
         while not terminated:
             response_list = Event.parse_dap_response(encoded_response)
             encoded_response = b""
 
             # Logic to control program execution
             for response in response_list:
-                print(response)
                 if response["type"] == DAPMessage.EVENT:
                     if response["event"] == DAPEvent.STOPPED:
                         if response["body"]["reason"] == "breakpoint":
@@ -68,6 +69,9 @@ class Reporter:
 
             if not encoded_response:
                 encoded_response = self.debugger_connection.idle()
+
+            if self.timeout != 0 and time.time() - start_time >= self.timeout:
+                terminated = True
 
         report_file.close()
         print("Closing reporter.")
