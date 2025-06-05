@@ -7,6 +7,7 @@ import csv
 from dap_rt_reporter.reporter import Reporter
 from dap_rt_reporter.event.checkpoint_reached_event import CheckpointReachedEvent
 from dap_rt_reporter.types import ReportEvent, ReportEventType
+from dap_rt_reporter.connection_wrapper.gdb_connection import GDBConnection
 
 
 class TestCheckpointReached(unittest.TestCase):
@@ -14,7 +15,8 @@ class TestCheckpointReached(unittest.TestCase):
         sut = "tests/integration/resources/simple_test/target/debug/simple_test"
         execution_log = "tests/integration/main_log_file.log"
 
-        self.reporter = Reporter(sut, execution_log)
+        self.connection = GDBConnection(sut)
+        self.reporter = Reporter(execution_log, self.connection)
 
         # Set checkpoints
         self.reporter.set_event(

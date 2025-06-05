@@ -7,7 +7,7 @@ from dap_rt_reporter.connection_wrapper.connection_wrapper import ConnectionWrap
 
 
 class GDBConnection(ConnectionWrapper):
-    def __init__(self, executable, executable_args):
+    def __init__(self, executable: str, executable_args: str = ""):
         super().__init__(executable, executable_args)
 
         self.launch_command = ["rust-gdb", "-i=dap", "-quiet"]

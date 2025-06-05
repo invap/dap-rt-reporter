@@ -12,6 +12,7 @@ from dap_rt_reporter.event.variable_value_assigned_event import (
     VariableValueAssignedEvent,
 )
 from dap_rt_reporter.types import ReportEvent, ReportEventType
+from dap_rt_reporter.connection_wrapper.gdb_connection import GDBConnection
 
 
 class TestProgrammaticUse(unittest.TestCase):
@@ -21,9 +22,10 @@ class TestProgrammaticUse(unittest.TestCase):
         execution_log = "tests/integration/programmatic.log"
         source_path = "tests/integration/resources/simple_test/src/main.rs"
 
+        connection = GDBConnection(sut_path)
         # Initialize reporter
         reporter = Reporter(
-            executable_path=sut_path, execution_trace_log_path=execution_log
+            execution_trace_log_path=execution_log, connection=connection
         )
 
         # Set checkpoint event on line 12
@@ -67,7 +69,7 @@ class TestProgrammaticUse(unittest.TestCase):
                     ReportEventType.STATE_EVENT,
                     ReportEvent.VARIABLE_VALUE_ASSIGNED,
                     "var_x",
-                    str(2**(i + 1)),
+                    str(2 ** (i + 1)),
                 ]
             )
 

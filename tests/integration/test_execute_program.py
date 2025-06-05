@@ -8,13 +8,16 @@
 import unittest
 
 from dap_rt_reporter.reporter import Reporter
+from dap_rt_reporter.connection_wrapper.gdb_connection import GDBConnection
 
 
 class TestExecuteProgram(unittest.TestCase):
     def test_start(self):
+        self.connection = GDBConnection(
+            "tests/integration/resources/simple_test/target/debug/simple_test"
+        )
         self.reporter = Reporter(
-            executable_path="tests/integration/resources/simple_test/target/debug/simple_test",
-            execution_trace_log_path="execute.log",
+            execution_trace_log_path="execute.log", connection=self.connection
         )
 
         terminate = self.reporter.execute()
