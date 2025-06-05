@@ -7,9 +7,9 @@ build-essential \
 gdb \
 python-is-python3 \
 curl \
-git 
-
-
+git \
+lldb \
+llvm
 
 RUN pipx install poetry 
 
