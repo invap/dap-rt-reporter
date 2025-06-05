@@ -19,8 +19,8 @@ class Reporter:
         self,
         executable_path: str,
         execution_trace_log_path: str,
-        executable_args: str,
-        timeout: int
+        executable_args: str = "",
+        timeout: int = 0,
     ) -> None:
         self.debugger_connection = ConnectionWrapper(executable_path, executable_args)
         self.listener = Listener()
@@ -135,7 +135,7 @@ class Reporter:
                         for breakpoint in response["body"]["breakpoints"]:
                             if not breakpoint["verified"]:
                                 raise RuntimeError(
-                                    f"Breakpoint verification failed: \nSource: {breakpoint_id_table[str(breakpoint["id"])]["source_path"]} \nLine: {breakpoint_id_table[str(breakpoint["id"])]["line"]}"
+                                    f"Breakpoint verification failed: \nSource: {breakpoint_id_table[str(breakpoint['id'])]['source_path']} \nLine: {breakpoint_id_table[str(breakpoint['id'])]['line']}"
                                 )
                         breakpoint_verification = True
 
