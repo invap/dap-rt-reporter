@@ -19,12 +19,15 @@ class Reporter:
         self,
         executable_path: str,
         execution_trace_log_path: str,
+        executable_args: str = "",
+        timeout: int = 0,
     ) -> None:
-        self.debugger_connection = ConnectionWrapper(executable_path)
+        self.debugger_connection = ConnectionWrapper(executable_path, executable_args)
         self.listener = Listener()
 
         self.executable_path = executable_path
         self.execution_trace_log_path = execution_trace_log_path
+        self.timeout = timeout
 
         # Used for saving events
         self.events = []
@@ -39,8 +42,10 @@ class Reporter:
         self._set_up()
 
         # Start execution
+        print("Starting SUT execution")
         encoded_response = self.debugger_connection.launch()
         terminated = False
+        start_time = time.time()
         while not terminated:
             response_list = Event.parse_dap_response(encoded_response)
             encoded_response = b""
@@ -65,7 +70,11 @@ class Reporter:
             if not encoded_response:
                 encoded_response = self.debugger_connection.idle()
 
+            if self.timeout != 0 and time.time() - start_time >= self.timeout:
+                terminated = True
+
         report_file.close()
+        print("Closing reporter.")
 
         return terminated
 
@@ -126,7 +135,7 @@ class Reporter:
                         for breakpoint in response["body"]["breakpoints"]:
                             if not breakpoint["verified"]:
                                 raise RuntimeError(
-                                    f"Breakpoint verification failed: \nSource: {breakpoint_id_table[str(breakpoint["id"])]["source_path"]} \nLine: {breakpoint_id_table[str(breakpoint["id"])]["line"]}"
+                                    f"Breakpoint verification failed: \nSource: {breakpoint_id_table[str(breakpoint['id'])]['source_path']} \nLine: {breakpoint_id_table[str(breakpoint['id'])]['line']}"
                                 )
                         breakpoint_verification = True
 
