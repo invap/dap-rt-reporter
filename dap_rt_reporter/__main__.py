@@ -35,7 +35,6 @@ parser.add_argument("--desc", help="configuration file", required=True)
 parser.add_argument("--log", help="log file to store report", required=True)
 parser.add_argument("-f", help="force log rewrite", action="store_true")
 parser.add_argument("--sut-args", help="add argument for SUT", nargs="+")
-parser.add_argument("--timeout", help="amount of time in seconds to run the reporter")
 
 args = parser.parse_args()
 
@@ -44,7 +43,6 @@ config_file = args.desc
 log_path = args.log
 force = args.f
 sut_args = " ".join(args.sut_args) if args.sut_args else ""
-timeout = args.timeout
 
 # Checks
 if not os.path.isfile(sut):
@@ -53,15 +51,8 @@ if not os.path.isfile(config_file):
     raise RuntimeError(f"No file named {config_file} exists.")
 if os.path.isfile(log_path) and not force:
     raise RuntimeError(f"Warning: {log_path} already exists, use -f to force rewrite.")
-if timeout:
-    if timeout.isdigit():
-        timeout = int(timeout)
-    else:
-        raise RuntimeError(f"{timeout} is not a valid number.")
-else:
-    timeout = 0
 
-reporter = Reporter(sut, log_path, sut_args, timeout)
+reporter = Reporter(sut, log_path, sut_args)
 
 print("Reading configuration file...")
 # Read each line and add corresponding events
