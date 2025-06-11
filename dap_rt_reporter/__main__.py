@@ -159,7 +159,7 @@ with open(config_file, "r") as workflow_file:
             case _:
                 raise RuntimeError(f"Event {event} is undefined.")
 
-signal.signal(signal.Signals.SIGINT, (lambda signum, frame: reporter.kill()))
+signal.signal(signal.SIGINT, (lambda signum, frame: reporter.kill()))
 reporter.execute()
 
 reporter.close()
