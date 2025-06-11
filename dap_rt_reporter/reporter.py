@@ -20,14 +20,13 @@ class Reporter:
         executable_path: str,
         execution_trace_log_path: str,
         executable_args: str = "",
-        timeout: int = 0,
     ) -> None:
         self.debugger_connection = ConnectionWrapper(executable_path, executable_args)
         self.listener = Listener()
 
         self.executable_path = executable_path
         self.execution_trace_log_path = execution_trace_log_path
-        self.timeout = timeout
+        self.alive = True
 
         # Used for saving events
         self.events = []
@@ -45,8 +44,8 @@ class Reporter:
             print("Starting SUT execution")
             encoded_response = self.debugger_connection.launch()
             terminated = False
-            start_time = time.time()
-            while not terminated:
+
+            while not terminated and self.alive:
                 response_list = Event.parse_dap_response(encoded_response)
                 encoded_response = b""
 
@@ -61,7 +60,9 @@ class Reporter:
                                     csv_writer,
                                     self.debugger_connection,
                                 )
-                            encoded_response = self.debugger_connection.continue_execution()
+                            encoded_response = (
+                                self.debugger_connection.continue_execution()
+                            )
                         elif response["event"] == DAPEvent.TERMINATED:
                             terminated = True
                     elif response["type"] == DAPMessage.RESPONSE:
@@ -70,10 +71,7 @@ class Reporter:
                 if not encoded_response:
                     encoded_response = self.debugger_connection.idle()
 
-                if self.timeout != 0 and time.time() - start_time >= self.timeout:
-                    terminated = True
-
-            print("Closing reporter.")
+        print("Closing reporter.")
 
         return terminated
 
@@ -139,6 +137,11 @@ class Reporter:
                         breakpoint_verification = True
 
                 encoded_response = self.debugger_connection.idle()
+
+    def kill(self):
+        """Kill reporter. Stops SUT execution but allow events set up to be completed."""
+
+        self.alive = False
 
     def set_event(self, event: Event):
         """Set new event to report."""

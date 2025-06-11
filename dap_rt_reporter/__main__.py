@@ -4,6 +4,7 @@
 import csv
 import argparse
 import os
+import signal
 
 from dap_rt_reporter.types import ReportEvent
 from dap_rt_reporter.reporter import Reporter
@@ -158,6 +159,7 @@ with open(config_file, "r") as workflow_file:
             case _:
                 raise RuntimeError(f"Event {event} is undefined.")
 
+signal.signal(signal.Signals.SIGINT, (lambda signum, frame: reporter.kill()))
 reporter.execute()
 
 reporter.close()
