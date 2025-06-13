@@ -4,18 +4,21 @@
 import dap
 from dap_rt_reporter.stdio_handler import STDIOHandler
 
-
 class ConnectionWrapper:
     """Wrapper for the connection between the DAP client and debugger."""
 
     def __init__(self, executable: str, executable_args: str, timeout=1.0) -> None:
         self.timeout = timeout
         self.executable_args = executable_args
+        self.alive = True
 
         launch_command = ["gdb", "-i=dap", "--quiet", executable]
             
         self.stdio_handler = STDIOHandler(launch_command)
         self.dap_client = dap.Client("DAP Client")
+
+    def is_alive(self):
+        return self.alive
 
     def _send(self):
         """Clears the DAP client buffer and writes the commands to the stdio pipe,

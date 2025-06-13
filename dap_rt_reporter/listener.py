@@ -19,7 +19,7 @@ class Listener:
             
             # Wait until step is completed
             # TODO: Check if timeout or other checks are necessary
-            while b"stopped" not in encoded_response:
+            while b"stopped" not in encoded_response and debugger_connection.is_alive():
                 encoded_response = debugger_connection.idle()
 
             for event in self.events[breakpoint_id]["a"]:

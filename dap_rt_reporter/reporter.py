@@ -3,6 +3,7 @@
 
 import csv
 import time
+import logging
 
 from dap_rt_reporter.connection_wrapper import ConnectionWrapper
 from dap_rt_reporter.types import DAPEvent, DAPMessage
@@ -41,11 +42,11 @@ class Reporter:
             self._set_up()
 
             # Start execution
-            print("Starting SUT execution")
+            logging.info("Starting SUT execution")
             encoded_response = self.debugger_connection.launch()
             terminated = False
 
-            while not terminated and self.alive:
+            while not terminated and self.debugger_connection.is_alive():
                 response_list = Event.parse_dap_response(encoded_response)
                 encoded_response = b""
 
@@ -71,13 +72,14 @@ class Reporter:
                 if not encoded_response:
                     encoded_response = self.debugger_connection.idle()
 
-        print("Closing reporter.")
+        logging.info("Closing reporter")
 
         return terminated
 
     def _set_up(self):
         """Sets breakpoints and gives the events to listener."""
 
+        logging.info("Setting breakpoints")
         # Create breakpoint locations
         breakpoint_locations = {}
         for event in self.events:
@@ -115,6 +117,7 @@ class Reporter:
             source_dap_form = {"name": source, "path": source_path}
 
             # Set breakpoints and clear previous ones
+            logging.debug("Setting breakpoints for %s", source_dap_form["name"])
             encoded_response = self.debugger_connection.set_breakpoints_source(
                 source_dap_form, lines_dap_form
             )
@@ -122,9 +125,10 @@ class Reporter:
             # Check breakpoints verification
             # Read all responses until verification is confirmed
             breakpoint_verification = False
-            while not breakpoint_verification:
+            while not breakpoint_verification and self.debugger_connection.is_alive():# and self.alive:
                 response_list = Event.parse_dap_response(encoded_response)
                 for response in response_list:
+                    #logging.debug("At breakpoint verification DAP response: %s", response)
                     if (
                         response["type"] == DAPMessage.RESPONSE
                         and response["command"] == "setBreakpoints"
@@ -138,10 +142,11 @@ class Reporter:
 
                 encoded_response = self.debugger_connection.idle()
 
-    def kill(self):
+    def kill(self, segnum=0, frame=""):
         """Kill reporter. Stops SUT execution but allow events set up to be completed."""
 
-        self.alive = False
+        logging.debug("Killing reporter at : %s and segnum %d", frame, segnum)
+        self.debugger_connection.alive = False
 
     def set_event(self, event: Event):
         """Set new event to report."""
@@ -149,4 +154,5 @@ class Reporter:
         self.events.append(event)
 
     def close(self):
+        logging.info("Closing debugger connection.")
         self.debugger_connection.close_connection()

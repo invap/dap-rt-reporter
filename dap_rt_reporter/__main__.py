@@ -5,6 +5,7 @@ import csv
 import argparse
 import os
 import signal
+import logging
 
 from dap_rt_reporter.types import ReportEvent
 from dap_rt_reporter.reporter import Reporter
@@ -19,6 +20,8 @@ from dap_rt_reporter.event.clock_pause import ClockPauseEvent
 from dap_rt_reporter.event.clock_reset import ClockResetEvent
 from dap_rt_reporter.event.clock_resume import ClockResumeEvent
 from dap_rt_reporter.event.component_event import ComponentEvent
+
+logging.basicConfig(encoding="utf-8", level=logging.INFO, format="%(levelname)s::%(message)s")
 
 # Parser arguments
 parser = argparse.ArgumentParser(
@@ -55,7 +58,7 @@ if os.path.isfile(log_path) and not force:
 
 reporter = Reporter(sut, log_path, sut_args)
 
-print("Reading configuration file...")
+logging.info("Reading configuration file")
 # Read each line and add corresponding events
 with open(config_file, "r") as workflow_file:
     workflow_reader = csv.reader(workflow_file, delimiter=",")
@@ -159,7 +162,6 @@ with open(config_file, "r") as workflow_file:
             case _:
                 raise RuntimeError(f"Event {event} is undefined.")
 
-signal.signal(signal.SIGINT, (lambda signum, frame: reporter.kill()))
+signal.signal(signal.SIGINT, reporter.kill)
 reporter.execute()
-
 reporter.close()
