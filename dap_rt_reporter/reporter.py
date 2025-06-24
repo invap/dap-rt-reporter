@@ -27,7 +27,6 @@ class Reporter:
 
         self.executable_path = executable_path
         self.execution_trace_log_path = execution_trace_log_path
-        self.alive = True
 
         # Used for saving events
         self.events = []
@@ -125,10 +124,10 @@ class Reporter:
             # Check breakpoints verification
             # Read all responses until verification is confirmed
             breakpoint_verification = False
-            while not breakpoint_verification and self.debugger_connection.is_alive():# and self.alive:
+            while not breakpoint_verification and self.debugger_connection.is_alive():
                 response_list = Event.parse_dap_response(encoded_response)
                 for response in response_list:
-                    #logging.debug("At breakpoint verification DAP response: %s", response)
+                    # logging.debug("At breakpoint verification DAP response: %s", response)
                     if (
                         response["type"] == DAPMessage.RESPONSE
                         and response["command"] == "setBreakpoints"
