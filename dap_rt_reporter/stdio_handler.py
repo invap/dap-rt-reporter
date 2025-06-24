@@ -83,4 +83,7 @@ class STDIOHandler:
             self.debugger_subprocess.stderr.close()
 
         self.debugger_subprocess.terminate()
-        self.debugger_subprocess.wait()
+        try:
+            self.debugger_subprocess.wait(1)
+        except subprocess.TimeoutExpired:
+            self.debugger_subprocess.kill()

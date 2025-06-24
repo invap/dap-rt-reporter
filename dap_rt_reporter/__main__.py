@@ -4,6 +4,8 @@
 import csv
 import argparse
 import os
+import signal
+import logging
 
 from dap_rt_reporter.types import ReportEvent
 from dap_rt_reporter.reporter import Reporter
@@ -18,6 +20,8 @@ from dap_rt_reporter.event.clock_pause import ClockPauseEvent
 from dap_rt_reporter.event.clock_reset import ClockResetEvent
 from dap_rt_reporter.event.clock_resume import ClockResumeEvent
 from dap_rt_reporter.event.component_event import ComponentEvent
+
+logging.basicConfig(encoding="utf-8", level=logging.INFO, format="%(levelname)s::%(message)s")
 
 # Parser arguments
 parser = argparse.ArgumentParser(
@@ -35,7 +39,6 @@ parser.add_argument("--desc", help="configuration file", required=True)
 parser.add_argument("--log", help="log file to store report", required=True)
 parser.add_argument("-f", help="force log rewrite", action="store_true")
 parser.add_argument("--sut-args", help="add argument for SUT", nargs="+")
-parser.add_argument("--timeout", help="amount of time in seconds to run the reporter")
 
 args = parser.parse_args()
 
@@ -44,7 +47,6 @@ config_file = args.desc
 log_path = args.log
 force = args.f
 sut_args = " ".join(args.sut_args) if args.sut_args else ""
-timeout = args.timeout
 
 # Checks
 if not os.path.isfile(sut):
@@ -53,17 +55,10 @@ if not os.path.isfile(config_file):
     raise RuntimeError(f"No file named {config_file} exists.")
 if os.path.isfile(log_path) and not force:
     raise RuntimeError(f"Warning: {log_path} already exists, use -f to force rewrite.")
-if timeout:
-    if timeout.isdigit():
-        timeout = int(timeout)
-    else:
-        raise RuntimeError(f"{timeout} is not a valid number.")
-else:
-    timeout = 0
 
-reporter = Reporter(sut, log_path, sut_args, timeout)
+reporter = Reporter(sut, log_path, sut_args)
 
-print("Reading configuration file...")
+logging.info("Reading configuration file")
 # Read each line and add corresponding events
 with open(config_file, "r") as workflow_file:
     workflow_reader = csv.reader(workflow_file, delimiter=",")
@@ -167,6 +162,6 @@ with open(config_file, "r") as workflow_file:
             case _:
                 raise RuntimeError(f"Event {event} is undefined.")
 
+signal.signal(signal.SIGINT, reporter.kill)
 reporter.execute()
-
 reporter.close()

@@ -3,6 +3,7 @@
 
 import csv
 import time
+import logging
 
 from dap_rt_reporter.connection_wrapper import ConnectionWrapper
 from dap_rt_reporter.types import DAPEvent, DAPMessage
@@ -20,14 +21,12 @@ class Reporter:
         executable_path: str,
         execution_trace_log_path: str,
         executable_args: str = "",
-        timeout: int = 0,
     ) -> None:
         self.debugger_connection = ConnectionWrapper(executable_path, executable_args)
         self.listener = Listener()
 
         self.executable_path = executable_path
         self.execution_trace_log_path = execution_trace_log_path
-        self.timeout = timeout
 
         # Used for saving events
         self.events = []
@@ -35,52 +34,51 @@ class Reporter:
     def execute(self):
         """Begins program execution and report."""
 
-        report_file = open(self.execution_trace_log_path, "w")
-        csv_writer = csv.writer(report_file, delimiter=",")
+        with open(self.execution_trace_log_path, "w") as report_file:
+            csv_writer = csv.writer(report_file, delimiter=",")
 
-        self.debugger_connection.start()
-        self._set_up()
+            self.debugger_connection.start()
+            self._set_up()
 
-        # Start execution
-        print("Starting SUT execution")
-        encoded_response = self.debugger_connection.launch()
-        terminated = False
-        start_time = time.time()
-        while not terminated:
-            response_list = Event.parse_dap_response(encoded_response)
-            encoded_response = b""
+            # Start execution
+            logging.info("Starting SUT execution")
+            encoded_response = self.debugger_connection.launch()
+            terminated = False
 
-            # Logic to control program execution
-            for response in response_list:
-                if response["type"] == DAPMessage.EVENT:
-                    if response["event"] == DAPEvent.STOPPED:
-                        if response["body"]["reason"] == "breakpoint":
-                            self.listener.handle_response(
-                                int(1e6 * time.time()),
-                                response,
-                                csv_writer,
-                                self.debugger_connection,
+            while not terminated and self.debugger_connection.is_alive():
+                response_list = Event.parse_dap_response(encoded_response)
+                encoded_response = b""
+
+                # Logic to control program execution
+                for response in response_list:
+                    if response["type"] == DAPMessage.EVENT:
+                        if response["event"] == DAPEvent.STOPPED:
+                            if response["body"]["reason"] == "breakpoint":
+                                self.listener.handle_response(
+                                    int(1e6 * time.time()),
+                                    response,
+                                    csv_writer,
+                                    self.debugger_connection,
+                                )
+                            encoded_response = (
+                                self.debugger_connection.continue_execution()
                             )
-                        encoded_response = self.debugger_connection.continue_execution()
-                    elif response["event"] == DAPEvent.TERMINATED:
-                        terminated = True
-                elif response["type"] == DAPMessage.RESPONSE:
-                    pass
+                        elif response["event"] == DAPEvent.TERMINATED:
+                            terminated = True
+                    elif response["type"] == DAPMessage.RESPONSE:
+                        pass
 
-            if not encoded_response:
-                encoded_response = self.debugger_connection.idle()
+                if not encoded_response:
+                    encoded_response = self.debugger_connection.idle()
 
-            if self.timeout != 0 and time.time() - start_time >= self.timeout:
-                terminated = True
-
-        report_file.close()
-        print("Closing reporter.")
+        logging.info("Closing reporter")
 
         return terminated
 
     def _set_up(self):
         """Sets breakpoints and gives the events to listener."""
 
+        logging.info("Setting breakpoints")
         # Create breakpoint locations
         breakpoint_locations = {}
         for event in self.events:
@@ -118,6 +116,7 @@ class Reporter:
             source_dap_form = {"name": source, "path": source_path}
 
             # Set breakpoints and clear previous ones
+            logging.debug("Setting breakpoints for %s", source_dap_form["name"])
             encoded_response = self.debugger_connection.set_breakpoints_source(
                 source_dap_form, lines_dap_form
             )
@@ -125,9 +124,10 @@ class Reporter:
             # Check breakpoints verification
             # Read all responses until verification is confirmed
             breakpoint_verification = False
-            while not breakpoint_verification:
+            while not breakpoint_verification and self.debugger_connection.is_alive():
                 response_list = Event.parse_dap_response(encoded_response)
                 for response in response_list:
+                    # logging.debug("At breakpoint verification DAP response: %s", response)
                     if (
                         response["type"] == DAPMessage.RESPONSE
                         and response["command"] == "setBreakpoints"
@@ -141,10 +141,17 @@ class Reporter:
 
                 encoded_response = self.debugger_connection.idle()
 
+    def kill(self, segnum=0, frame=""):
+        """Kill reporter. Stops SUT execution but allow events set up to be completed."""
+
+        logging.debug("Killing reporter at : %s and segnum %d", frame, segnum)
+        self.debugger_connection.alive = False
+
     def set_event(self, event: Event):
         """Set new event to report."""
 
         self.events.append(event)
 
     def close(self):
+        logging.info("Closing debugger connection.")
         self.debugger_connection.close_connection()

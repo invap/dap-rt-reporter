@@ -41,7 +41,7 @@ class Event(ABC):
         result = None
         encoded_response = debugger_connection.evaluate(expression)
         # encoded_response = debugger_connection.evaluate("_x")
-        while result is None:
+        while result is None and debugger_connection.is_alive():
             response_list = self.parse_dap_response(encoded_response)
             encoded_response = b""
 
