@@ -6,6 +6,7 @@ import json
 
 from abc import ABC, abstractmethod
 from dap_rt_reporter.types import DAPMessage
+from dap_rt_reporter.connection.connection_wrapper import ConnectionWrapper
 
 
 class Event(ABC):
@@ -35,46 +36,54 @@ class Event(ABC):
 
         return response_list
 
-    def evaluate_expression(self, expression, debugger_connection):
+    def evaluate_expression(
+        self, expression: str, thread_id: int, debugger_connection: ConnectionWrapper
+    ):
         """Evaluate expression in current context inside SUT."""
 
-        result = None
-        encoded_response = debugger_connection.evaluate(expression)
-        # encoded_response = debugger_connection.evaluate("_x")
-        while result is None and debugger_connection.is_alive():
-            response_list = self.parse_dap_response(encoded_response)
-            encoded_response = b""
+        # Get current frame id
+        debugger_connection.stack_trace(thread_id)
+        frame_id = None
+        while frame_id is None and debugger_connection.is_alive():
+            response = debugger_connection.get_response()
+            response = self.parse_dap_response(response)
 
-            for response in response_list:
-                if (
-                    response["type"] == DAPMessage.RESPONSE
-                    and response["command"] == "evaluate"
-                ):
-                    if response["success"]:
-                        result = response["body"]["result"]
-                    else:
-                        raise RuntimeError(response["message"])
-            if not encoded_response:
-                encoded_response = debugger_connection.idle()
+            if (
+                response["type"] == DAPMessage.RESPONSE
+                and response["command"] == "stackTrace"
+            ):
+                frame_id = response["body"]["stackFrames"][0]["id"]
+
+        # Evaluate expression
+        result = None
+        debugger_connection.evaluate(expression, frame_id)
+        while result is None and debugger_connection.is_alive():
+            response = debugger_connection.get_response()
+            response = self.parse_dap_response(response)
+
+            if (
+                response["type"] == DAPMessage.RESPONSE
+                and response["command"] == "evaluate"
+            ):
+                if response["success"]:
+                    result = response["body"]["result"]
+                else:
+                    raise RuntimeError(response["message"])
 
         return result
 
-    def _get_event_name(self, debugger_connection):
+    def _get_event_name(self, thread_id, debugger_connection: ConnectionWrapper):
         """Evaluate expressions inside the event name."""
 
         event_name = re.sub(
             r"{(.*?)}",
             lambda match: self.evaluate_expression(
-                re.findall(r"{(.*?)}", match.group())[0], debugger_connection
+                re.findall(r"{(.*?)}", match.group())[0], thread_id, debugger_connection
             ),
             self.name,
         )
 
         return event_name
-
-    @abstractmethod
-    def report(self):
-        pass
 
     def _set_type(self, type):
         """Setter for event type."""
@@ -84,3 +93,7 @@ class Event(ABC):
     def _set_sub_type(self, sub_type):
         """Setter for event sub type-"""
         self.sub_type = sub_type
+
+    @abstractmethod
+    def report(self):
+        pass

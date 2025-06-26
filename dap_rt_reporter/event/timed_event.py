@@ -10,12 +10,12 @@ class TimedEvent(Event):
         super().__init__(source_path, line, before, name)
         self._set_type(ReportEventType.TIMED_EVENT)
 
-    def report(self, timestamp, csv_writer, debugger_connection):
+    def report(self, timestamp, csv_writer, debugger_connection, thread_id):
         csv_writer.writerow(
             [
                 timestamp,
                 self.type,
                 self.sub_type,
-                self._get_event_name(debugger_connection),
+                self._get_event_name(thread_id, debugger_connection),
             ]
         )
