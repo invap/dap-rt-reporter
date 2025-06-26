@@ -5,7 +5,7 @@ import csv
 import time
 import logging
 
-from dap_rt_reporter.connection_wrapper import ConnectionWrapper
+from dap_rt_reporter.connection.gdb_connection import GDBConnection
 from dap_rt_reporter.types import DAPEvent, DAPMessage
 from dap_rt_reporter.listener import Listener
 from dap_rt_reporter.event.event import Event
@@ -22,7 +22,7 @@ class Reporter:
         execution_trace_log_path: str,
         executable_args: str = "",
     ) -> None:
-        self.debugger_connection = ConnectionWrapper(executable_path, executable_args)
+        self.debugger_connection = GDBConnection(executable_path, executable_args)
         self.listener = Listener()
 
         self.executable_path = executable_path
