@@ -22,19 +22,15 @@ class Event(ABC):
 
     @staticmethod
     def parse_dap_response(response: bytes):
-        """Converts DAP response to dictionary form.
-        Assumes complete message.
-        """
-        response_list = []
-        if response:
-            while b"\r\n\r\n{" in response:
-                length, response = response.split(b"\r\n\r\n", 1)
+        """Converts DAP response to dictionary form."""
 
-                length = int(length.split(b":")[1])
-                response_list.append(json.loads(response[:length]))
-                response = response[length:]
-
-        return response_list
+        if b"\r\n\r\n{" in response:
+            length, response = response.split(b"\r\n\r\n", 1)
+            length = int(length.split(b":")[1])
+            return json.loads(response[:length])
+        
+        # Return empty message
+        return {"type": None}
 
     def evaluate_expression(
         self, expression: str, thread_id: int, debugger_connection: ConnectionWrapper
