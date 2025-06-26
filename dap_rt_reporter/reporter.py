@@ -131,9 +131,7 @@ class Reporter:
                     for breakpoint in response["body"]["breakpoints"]:
                         if not breakpoint["verified"]:
                             raise RuntimeError(
-                                f"""Breakpoint verification failed: \n
-                                    Source: {breakpoint_id_table[str(breakpoint['id'])]['source_path']} \n
-                                    Line: {breakpoint_id_table[str(breakpoint['id'])]['line']}"""
+                                f"Breakpoint verification failed: \nSource: {breakpoint_id_table[str(breakpoint['id'])]['source_path']} \nLine: {breakpoint_id_table[str(breakpoint['id'])]['line']}"
                             )
                     breakpoint_verification = True
 
@@ -150,4 +148,4 @@ class Reporter:
 
     def close(self):
         logging.info("Closing debugger connection.")
-        self.debugger_connection.close_connection()
+        self.debugger_connection.close()

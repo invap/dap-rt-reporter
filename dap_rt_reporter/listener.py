@@ -14,7 +14,7 @@ class Listener:
         before = "b" if before else "a"
         
         breakpoint_id = response["body"]["hitBreakpointIds"][0]
-        thread_id = response["body"]["thread_id"]
+        thread_id = response["body"]["threadId"]
         for event in self.events[breakpoint_id][before]:
             event.report(timestamp, csv_writer, debugger_connection, thread_id)
 

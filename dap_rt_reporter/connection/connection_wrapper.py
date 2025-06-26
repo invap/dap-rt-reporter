@@ -28,10 +28,6 @@ class ConnectionWrapper(ABC):
         pass
 
     @abstractmethod
-    def set_up(self):
-        pass
-
-    @abstractmethod
     def initialize(self):
         pass
 
