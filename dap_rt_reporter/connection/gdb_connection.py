@@ -27,9 +27,9 @@ class GDBConnection(ConnectionWrapper):
         self.stdio_handler.write(command)
 
     def get_response(self) -> bytes:
-        """Gets next response from buffer or debugger."""
+        """Gets next response from buffer or debugger. If not alive return empty response."""
 
-        while True:
+        while self.alive:
             if b"\r\n\r\n{" in self.response_buffer:
                 length, _ = self.response_buffer.split(b"\r\n\r\n", 1)
                 length = int(length.split(b":")[1]) + len(length + b"\r\n\r\n")
@@ -42,6 +42,8 @@ class GDBConnection(ConnectionWrapper):
             partial_response = self.stdio_handler.read()
             if partial_response:
                 self.response_buffer += partial_response
+
+        return b""
 
     def initialize(self):
         """Send initialize request."""
