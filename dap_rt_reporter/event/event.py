@@ -40,7 +40,7 @@ class Event(ABC):
         # Get current frame id
         debugger_connection.stack_trace(thread_id)
         frame_id = None
-        while frame_id is None and debugger_connection.is_alive():
+        while frame_id is None and debugger_connection.get_alive():
             response = debugger_connection.get_response()
             response = self.parse_dap_response(response)
 
@@ -53,7 +53,7 @@ class Event(ABC):
         # Evaluate expression
         result = None
         debugger_connection.evaluate(expression, frame_id)
-        while result is None and debugger_connection.is_alive():
+        while result is None and debugger_connection.get_alive():
             response = debugger_connection.get_response()
             response = self.parse_dap_response(response)
 
