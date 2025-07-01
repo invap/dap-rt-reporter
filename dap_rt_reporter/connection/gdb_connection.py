@@ -9,7 +9,7 @@ from dap_rt_reporter.connection.connection_wrapper import ConnectionWrapper
 class GDBConnection(ConnectionWrapper):
     """Wrapper for the connection between the DAP client and debugger."""
 
-    def __init__(self, executable: str, executable_args: str, timeout=1.0) -> None:
+    def __init__(self, executable: str, executable_args: str) -> None:
         super().__init__(executable, executable_args)
         self.alive = True
 
@@ -83,12 +83,6 @@ class GDBConnection(ConnectionWrapper):
 
         self.dap_client.next(thread_id=0)
         self._send()
-
-    def idle(self):
-        """Reads from buffer."""
-
-        response = self.stdio_handler._read()
-        return response
 
     def evaluate(self, expression, frame_id):
         """Sends evaluate command with given expression in current frame."""
