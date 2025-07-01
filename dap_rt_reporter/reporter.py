@@ -5,7 +5,7 @@ import csv
 import time
 import logging
 
-from dap_rt_reporter.connection.gdb_connection import GDBConnection
+from dap_rt_reporter.connection.lldb_connection import LLDBConnection
 from dap_rt_reporter.types import DAPEvent, DAPMessage
 from dap_rt_reporter.listener import Listener
 from dap_rt_reporter.event.event import Event
@@ -22,7 +22,7 @@ class Reporter:
         execution_trace_log_path: str,
         executable_args: str = "",
     ) -> None:
-        self.debugger_connection = GDBConnection(executable_path, executable_args)
+        self.debugger_connection = LLDBConnection(executable_path, executable_args)
         self.listener = Listener()
 
         self.execution_trace_log_path = execution_trace_log_path
@@ -37,11 +37,12 @@ class Reporter:
             csv_writer = csv.writer(report_file, delimiter=",")
 
             self.debugger_connection.initialize()
+            self.debugger_connection.launch()
+            
             self._set_up()
 
-            # Start execution
+            # Start execution after configuration done is received
             logging.info("Starting SUT execution")
-            self.debugger_connection.launch()
             self.debugger_connection.configuration_done()
 
             terminated = False
