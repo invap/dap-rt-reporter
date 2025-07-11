@@ -5,7 +5,7 @@ import csv
 import time
 import logging
 
-from dap_rt_reporter.connection_wrapper import ConnectionWrapper
+from dap_rt_reporter.connection.gdb_connection import GDBConnection
 from dap_rt_reporter.types import DAPEvent, DAPMessage
 from dap_rt_reporter.listener import Listener
 from dap_rt_reporter.event.event import Event
@@ -22,54 +22,49 @@ class Reporter:
         execution_trace_log_path: str,
         executable_args: str = "",
     ) -> None:
-        self.debugger_connection = ConnectionWrapper(executable_path, executable_args)
+        self.debugger_connection = GDBConnection(executable_path, executable_args)
         self.listener = Listener()
 
-        self.executable_path = executable_path
         self.execution_trace_log_path = execution_trace_log_path
 
         # Used for saving events
         self.events = []
 
     def execute(self):
-        """Begins program execution and report."""
+        """Begins program execution and reporting."""
 
         with open(self.execution_trace_log_path, "w") as report_file:
             csv_writer = csv.writer(report_file, delimiter=",")
 
-            self.debugger_connection.start()
+            self.debugger_connection.initialize()
             self._set_up()
 
             # Start execution
             logging.info("Starting SUT execution")
-            encoded_response = self.debugger_connection.launch()
-            terminated = False
+            self.debugger_connection.launch()
+            self.debugger_connection.configuration_done()
 
-            while not terminated and self.debugger_connection.is_alive():
-                response_list = Event.parse_dap_response(encoded_response)
-                encoded_response = b""
+            terminated = False
+            while not terminated and self.debugger_connection.get_alive():
+                response = self.debugger_connection.get_response()
+                response = Event.parse_dap_response(response)
 
                 # Logic to control program execution
-                for response in response_list:
-                    if response["type"] == DAPMessage.EVENT:
-                        if response["event"] == DAPEvent.STOPPED:
-                            if response["body"]["reason"] == "breakpoint":
-                                self.listener.handle_response(
-                                    int(1e6 * time.time()),
-                                    response,
-                                    csv_writer,
-                                    self.debugger_connection,
-                                )
-                            encoded_response = (
-                                self.debugger_connection.continue_execution()
-                            )
-                        elif response["event"] == DAPEvent.TERMINATED:
-                            terminated = True
-                    elif response["type"] == DAPMessage.RESPONSE:
-                        pass
-
-                if not encoded_response:
-                    encoded_response = self.debugger_connection.idle()
+                if response["type"] == DAPMessage.EVENT:
+                    if (
+                        response["event"] == DAPEvent.STOPPED
+                        and response["body"]["reason"] == "breakpoint"
+                    ):
+                        self.listener.handle_response(
+                            int(1e6 * time.time()),
+                            response,
+                            csv_writer,
+                            self.debugger_connection,
+                            True,
+                        )
+                        self.debugger_connection.continue_execution()
+                    elif response["event"] == DAPEvent.TERMINATED:
+                        terminated = True
 
         logging.info("Closing reporter")
 
@@ -117,35 +112,34 @@ class Reporter:
 
             # Set breakpoints and clear previous ones
             logging.debug("Setting breakpoints for %s", source_dap_form["name"])
-            encoded_response = self.debugger_connection.set_breakpoints_source(
+            self.debugger_connection.set_breakpoints_source(
                 source_dap_form, lines_dap_form
             )
 
             # Check breakpoints verification
             # Read all responses until verification is confirmed
             breakpoint_verification = False
-            while not breakpoint_verification and self.debugger_connection.is_alive():
-                response_list = Event.parse_dap_response(encoded_response)
-                for response in response_list:
-                    # logging.debug("At breakpoint verification DAP response: %s", response)
-                    if (
-                        response["type"] == DAPMessage.RESPONSE
-                        and response["command"] == "setBreakpoints"
-                    ):
-                        for breakpoint in response["body"]["breakpoints"]:
-                            if not breakpoint["verified"]:
-                                raise RuntimeError(
-                                    f"Breakpoint verification failed: \nSource: {breakpoint_id_table[str(breakpoint['id'])]['source_path']} \nLine: {breakpoint_id_table[str(breakpoint['id'])]['line']}"
-                                )
-                        breakpoint_verification = True
-
-                encoded_response = self.debugger_connection.idle()
+            while not breakpoint_verification and self.debugger_connection.get_alive():
+                response = self.debugger_connection.get_response()
+                response = Event.parse_dap_response(response)
+                
+                # logging.debug("At breakpoint verification DAP response: %s", response)
+                if (
+                    response["type"] == DAPMessage.RESPONSE
+                    and response["command"] == "setBreakpoints"
+                ):
+                    for breakpoint in response["body"]["breakpoints"]:
+                        if not breakpoint["verified"]:
+                            raise RuntimeError(
+                                f"Breakpoint verification failed: \nSource: {breakpoint_id_table[str(breakpoint['id'])]['source_path']} \nLine: {breakpoint_id_table[str(breakpoint['id'])]['line']}"
+                            )
+                    breakpoint_verification = True
 
     def kill(self, segnum=0, frame=""):
         """Kill reporter. Stops SUT execution but allow events set up to be completed."""
 
         logging.debug("Killing reporter at : %s and segnum %d", frame, segnum)
-        self.debugger_connection.alive = False
+        self.debugger_connection.set_alive(False)
 
     def set_event(self, event: Event):
         """Set new event to report."""
@@ -154,4 +148,4 @@ class Reporter:
 
     def close(self):
         logging.info("Closing debugger connection.")
-        self.debugger_connection.close_connection()
+        self.debugger_connection.close()
