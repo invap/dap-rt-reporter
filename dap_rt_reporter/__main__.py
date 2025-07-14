@@ -42,7 +42,11 @@ parser.add_argument("--log", help="log file to store report", required=True)
 parser.add_argument("-f", help="force log rewrite", action="store_true")
 parser.add_argument("--sut-args", help="add argument for SUT", nargs="+")
 parser.add_argument(
-    "--debugger", "-deb", help="debugger selection", choices=["gdb", "lldb"], default="gdb"
+    "--debugger",
+    "-deb",
+    help="debugger selection",
+    choices=["gdb", "lldb"],
+    default="gdb",
 )
 
 args = parser.parse_args()
