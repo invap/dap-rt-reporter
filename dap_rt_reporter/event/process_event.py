@@ -14,15 +14,13 @@ class ProcessEvent(Event):
         super().__init__(source_path, line, before, name)
         self._set_type(ReportEventType.PROCESS_EVENT)
 
-    def report(self, timestamp, csv_writer, debugger_connection, thread_id):
+    def report(self, timestamp, debugger_connection, thread_id):
         """Report a process event. The output format is: \n
         [timestamp],process_event,[event_sub_type],[event_name]
         """
-        csv_writer.writerow(
-            [
-                timestamp,
-                self.type,
-                self.sub_type,
-                self._get_event_name(thread_id, debugger_connection),
-            ]
-        )
+        return [
+            timestamp,
+            self.type,
+            self.sub_type,
+            self._get_event_name(thread_id, debugger_connection),
+        ]
