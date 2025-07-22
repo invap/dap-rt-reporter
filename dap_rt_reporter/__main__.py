@@ -21,7 +21,9 @@ from dap_rt_reporter.event.clock_reset import ClockResetEvent
 from dap_rt_reporter.event.clock_resume import ClockResumeEvent
 from dap_rt_reporter.event.component_event import ComponentEvent
 
-logging.basicConfig(encoding="utf-8", level=logging.INFO, format="%(levelname)s::%(message)s")
+logging.basicConfig(
+    encoding="utf-8", level=logging.INFO, format="%(levelname)s::%(message)s"
+)
 
 # Parser arguments
 parser = argparse.ArgumentParser(
@@ -39,6 +41,13 @@ parser.add_argument("--desc", help="configuration file", required=True)
 parser.add_argument("--log", help="log file to store report", required=True)
 parser.add_argument("-f", help="force log rewrite", action="store_true")
 parser.add_argument("--sut-args", help="add argument for SUT", nargs="+")
+parser.add_argument(
+    "--debugger",
+    "-deb",
+    help="debugger selection",
+    choices=["gdb", "lldb"],
+    default="gdb",
+)
 
 args = parser.parse_args()
 
@@ -47,6 +56,7 @@ config_file = args.desc
 log_path = args.log
 force = args.f
 sut_args = " ".join(args.sut_args) if args.sut_args else ""
+debugger_selection = args.debugger
 
 # Checks
 if not os.path.isfile(sut):
@@ -56,7 +66,7 @@ if not os.path.isfile(config_file):
 if os.path.isfile(log_path) and not force:
     raise RuntimeError(f"Warning: {log_path} already exists, use -f to force rewrite.")
 
-reporter = Reporter(sut, log_path, sut_args)
+reporter = Reporter(sut, log_path, sut_args, debugger_selection)
 
 logging.info("Reading configuration file")
 # Read each line and add corresponding events

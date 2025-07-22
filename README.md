@@ -152,6 +152,7 @@ The currently supported events are:
         ```csv
         source:17:b,variable_value_assigned,var_x,x
         ```
+
         It takes as an extra argument the variable or expression you want to evaluate.
 1. Timed events:
     1. clock_start: Start a clock which can be used to track time.
@@ -180,10 +181,11 @@ The currently supported events are:
 
 1. Component events:
     1. component_event: Indicates a component function call. For more information on component events and digital twins please refer to the [rt-monitor](https://github.com/invap/rt-monitor).
-        
+
         ```csv
         source:20:b,component_event,component,component_func,x,y
         ```
+
         It takes as extra arguments the component function that is being called and the arguments of the call.
 
 After running the example project with simple_test_config.csv the output log should resemble:

@@ -5,6 +5,7 @@ import csv
 import time
 import logging
 
+from dap_rt_reporter.connection.lldb_connection import LLDBConnection
 from dap_rt_reporter.connection.gdb_connection import GDBConnection
 from dap_rt_reporter.types import DAPEvent, DAPMessage
 from dap_rt_reporter.listener import Listener
@@ -21,8 +22,18 @@ class Reporter:
         executable_path: str,
         execution_trace_log_path: str,
         executable_args: str = "",
+        debugger_selection: str = "gdb",
     ) -> None:
-        self.debugger_connection = GDBConnection(executable_path, executable_args)
+        
+        self.debugger_selection = debugger_selection
+        match self.debugger_selection:
+            case "gdb":
+                self.debugger_connection = GDBConnection(executable_path, executable_args)
+            case "lldb":
+                self.debugger_connection = LLDBConnection(executable_path, executable_args)
+            case _:
+                raise RuntimeError("Invalid debugger option.")
+
         self.listener = Listener()
 
         self.execution_trace_log_path = execution_trace_log_path
@@ -37,11 +48,16 @@ class Reporter:
             csv_writer = csv.writer(report_file, delimiter=",")
 
             self.debugger_connection.initialize()
-            self._set_up()
+            match self.debugger_selection:
+                case "gdb":
+                    self._set_up()
+                    self.debugger_connection.launch()
+                case "lldb":
+                    self.debugger_connection.launch()
+                    self._set_up()
 
-            # Start execution
+            # Start execution after configuration done is received
             logging.info("Starting SUT execution")
-            self.debugger_connection.launch()
             self.debugger_connection.configuration_done()
 
             terminated = False
@@ -122,7 +138,7 @@ class Reporter:
             while not breakpoint_verification and self.debugger_connection.get_alive():
                 response = self.debugger_connection.get_response()
                 response = Event.parse_dap_response(response)
-                
+
                 # logging.debug("At breakpoint verification DAP response: %s", response)
                 if (
                     response["type"] == DAPMessage.RESPONSE
