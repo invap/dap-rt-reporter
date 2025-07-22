@@ -38,7 +38,7 @@ parser = argparse.ArgumentParser(
 
 parser.add_argument("--sut", help="binary of the program to report", required=True)
 parser.add_argument("--desc", help="configuration file", required=True)
-parser.add_argument("--log", help="log file to store report", required=True)
+parser.add_argument("--log", help="log file to store report", default="execution.csv")
 parser.add_argument("-f", help="force log rewrite", action="store_true")
 parser.add_argument("--sut-args", help="add argument for SUT", nargs="+")
 parser.add_argument(
@@ -48,6 +48,14 @@ parser.add_argument(
     choices=["gdb", "lldb"],
     default="gdb",
 )
+
+# RabbitMQ configuration arguments
+parser.add_argument("--use-rabbitmq", help="use RabbitMQ to send the report based on the configuration", action="store_true")
+parser.add_argument("--rabbitmq-host", help="RabbitMQ host option", default="localhost")
+parser.add_argument("--rabbitmq-port", help="RabbitMQ port option", default="5672")
+parser.add_argument("--rabbitmq-user", help="RabbitMQ user option", default="guest")
+parser.add_argument("--rabbitmq-password", help="RabbitMQ password option", default="guest")
+parser.add_argument("--rabbitmq-exchange", help="RabbitMQ exchange used to send events", default="my_event_exchange")
 
 args = parser.parse_args()
 
