@@ -3,20 +3,29 @@
 
 from dap_rt_reporter.event.event import Event
 from dap_rt_reporter.connection.connection_wrapper import ConnectionWrapper
+from csv import writer
+
 
 class Listener:
     def __init__(self) -> None:
         self.events = {}
 
-    def handle_response(self, timestamp: int, response: dict, csv_writer, debugger_connection: ConnectionWrapper, before: bool):
-        """Listens to responses from debugger and gives instructions to reporter."""
-        
+    def handle_response(
+        self,
+        timestamp: int,
+        response: dict,
+        csv_writer: writer,
+        debugger_connection: ConnectionWrapper,
+        before: bool,
+    ):
+        """Handle breakpoint responses."""
+
         before = "b" if before else "a"
-        
+
         breakpoint_id = response["body"]["hitBreakpointIds"][0]
         thread_id = response["body"]["threadId"]
         for event in self.events[breakpoint_id][before]:
-            event.report(timestamp, csv_writer, debugger_connection, thread_id)
+            csv_writer.writerow(event.report(timestamp, debugger_connection, thread_id))
 
     def add_event(self, breakpoint_id, event: Event):
         """Adds event to listen list, uses breakpoint id as identifier."""
