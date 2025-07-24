@@ -176,3 +176,4 @@ class Reporter:
     def close(self):
         logging.info("Closing debugger connection.")
         self.debugger_connection.close()
+        self.listener.close()

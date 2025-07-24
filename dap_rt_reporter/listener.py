@@ -56,3 +56,7 @@ class Listener:
 
     def set_rabbitmq_connection(self, rabbitmq_connection):
         self.rabbitmq_connection = rabbitmq_connection
+
+    def close(self):
+        if self.rabbitmq_connection:
+            self.rabbitmq_connection.disconnect()
