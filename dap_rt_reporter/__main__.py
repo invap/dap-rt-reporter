@@ -21,10 +21,6 @@ from dap_rt_reporter.event.clock_reset import ClockResetEvent
 from dap_rt_reporter.event.clock_resume import ClockResumeEvent
 from dap_rt_reporter.event.component_event import ComponentEvent
 
-logging.basicConfig(
-    encoding="utf-8", level=logging.INFO, format="%(levelname)s::%(message)s"
-)
-
 # Parser arguments
 parser = argparse.ArgumentParser(
     prog="dap_reporter",
@@ -47,6 +43,12 @@ parser.add_argument(
     help="debugger selection",
     choices=["gdb", "lldb"],
     default="gdb",
+)
+parser.add_argument(
+    "--log-level",
+    help="select logging level",
+    choices=["info", "debug", "warning", "error", "critical"],
+    default="info",
 )
 
 # RabbitMQ configuration arguments
@@ -83,6 +85,24 @@ if not os.path.isfile(config_file):
 if os.path.isfile(log_path) and not force:
     raise RuntimeError(f"Warning: {log_path} already exists, use -f to force rewrite.")
 
+# Logging level
+match args.log_level:
+    case "info":
+        logging_level = logging.INFO
+    case "debug":
+        logging_level = logging.DEBUG
+    case "warning":
+        logging_level = logging.WARNING
+    case "error":
+        logging_level = logging.ERROR
+    case "critical":
+        logging_level = logging.CRITICAL
+    case _:
+        raise RuntimeError(f"Level {args.log_level} is not a valid option.")
+
+logging.basicConfig(
+    encoding="utf-8", level=logging_level, format="%(levelname)s::%(message)s"
+)
 
 reporter = Reporter(sut, log_path, sut_args, debugger_selection)
 
