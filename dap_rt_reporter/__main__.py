@@ -50,12 +50,22 @@ parser.add_argument(
 )
 
 # RabbitMQ configuration arguments
-parser.add_argument("--use-rabbitmq", help="use RabbitMQ to send the report based on the configuration", action="store_true")
+parser.add_argument(
+    "--use-rabbitmq",
+    help="use RabbitMQ to send the report based on the configuration",
+    action="store_true",
+)
 parser.add_argument("--rabbitmq-host", help="RabbitMQ host option", default="localhost")
 parser.add_argument("--rabbitmq-port", help="RabbitMQ port option", default="5672")
 parser.add_argument("--rabbitmq-user", help="RabbitMQ user option", default="guest")
-parser.add_argument("--rabbitmq-password", help="RabbitMQ password option", default="guest")
-parser.add_argument("--rabbitmq-exchange", help="RabbitMQ exchange used to send events", default="my_event_exchange")
+parser.add_argument(
+    "--rabbitmq-password", help="RabbitMQ password option", default="guest"
+)
+parser.add_argument(
+    "--rabbitmq-exchange",
+    help="RabbitMQ exchange used to send events",
+    default="my_event_exchange",
+)
 
 args = parser.parse_args()
 
@@ -65,6 +75,7 @@ log_path = args.log
 force = args.f
 sut_args = " ".join(args.sut_args) if args.sut_args else ""
 debugger_selection = args.debugger
+use_rabbitmq = args.use_rabbitmq
 
 # Checks
 if not os.path.isfile(sut):
@@ -74,7 +85,15 @@ if not os.path.isfile(config_file):
 if os.path.isfile(log_path) and not force:
     raise RuntimeError(f"Warning: {log_path} already exists, use -f to force rewrite.")
 
+
 reporter = Reporter(sut, log_path, sut_args, debugger_selection)
+
+#
+if use_rabbitmq:
+    reporter.connect_rabbitmq(
+        args.host, args.port, args.user, args.password, args.exchange
+    )
+
 
 logging.info("Reading configuration file")
 # Read each line and add corresponding events

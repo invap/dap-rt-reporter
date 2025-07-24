@@ -8,7 +8,12 @@ from csv import writer
 
 class Listener:
     def __init__(self) -> None:
+
+        # Events dictionary
         self.events = {}
+
+        # RabbitMQ connection
+        self.rabbitmq_connection = None
 
     def handle_response(
         self,
@@ -25,7 +30,12 @@ class Listener:
         breakpoint_id = response["body"]["hitBreakpointIds"][0]
         thread_id = response["body"]["threadId"]
         for event in self.events[breakpoint_id][before]:
-            csv_writer.writerow(event.report(timestamp, debugger_connection, thread_id))
+            report = event.report(timestamp, debugger_connection, thread_id)
+
+            csv_writer.writerow(report)
+
+            if self.rabbitmq_connection:
+                self.rabbitmq_connection.publish(report)
 
     def add_event(self, breakpoint_id, event: Event):
         """Adds event to listen list, uses breakpoint id as identifier."""
@@ -43,3 +53,6 @@ class Listener:
             else:
                 self.events[breakpoint_id]["b"] = []
                 self.events[breakpoint_id]["a"] = [event]
+
+    def set_rabbitmq_connection(self, rabbitmq_connection):
+        self.rabbitmq_connection = rabbitmq_connection
