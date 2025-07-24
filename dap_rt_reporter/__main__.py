@@ -112,7 +112,6 @@ if use_rabbitmq:
         args.host, args.port, args.user, args.password, args.exchange
     )
 
-
 logging.info("Reading configuration file")
 # Read each line and add corresponding events
 with open(config_file, "r") as workflow_file:

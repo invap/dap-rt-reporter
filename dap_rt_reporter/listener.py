@@ -1,6 +1,8 @@
 # Copyright (C) <2024>  INVAP S.E.
 # SPDX-License-Identifier: AGPL-3.0-or-later
 
+import logging
+
 from dap_rt_reporter.event.event import Event
 from dap_rt_reporter.connection.connection_wrapper import ConnectionWrapper
 from csv import writer
@@ -31,6 +33,8 @@ class Listener:
         thread_id = response["body"]["threadId"]
         for event in self.events[breakpoint_id][before]:
             report = event.report(timestamp, debugger_connection, thread_id)
+
+            logging.debug("Reporting event: %s", report)
 
             csv_writer.writerow(report)
 

@@ -2,7 +2,7 @@
 # SPDX-License-Identifier: AGPL-3.0-or-later
 
 import pika
-
+import logging
 
 class RabbitMQConnection:
     def __init__(self, host: str, port: str, user: str, password: str, exchange: str):
@@ -26,6 +26,8 @@ class RabbitMQConnection:
             event_string += str(item)
             event_string += ","
         event_string += event[-1]
+
+        logging.debug("Publishing event: %s", event_string)
 
         # Publish event
         self.channel.basic_publish(
