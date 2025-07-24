@@ -72,4 +72,4 @@ class RabbitMQConnection:
         )
 
         # Disconnect from server
-        self.connection.close()
+        #self.connection.close()
