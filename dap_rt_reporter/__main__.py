@@ -55,14 +55,12 @@ parser.add_argument(
     help="use RabbitMQ to send the report based on the configuration",
     action="store_true",
 )
-parser.add_argument("--rabbitmq-host", help="RabbitMQ host option", default="localhost")
-parser.add_argument("--rabbitmq-port", help="RabbitMQ port option", default="5672")
-parser.add_argument("--rabbitmq-user", help="RabbitMQ user option", default="guest")
+parser.add_argument("--host", help="RabbitMQ host option", default="localhost")
+parser.add_argument("--port", help="RabbitMQ port option", default="5672")
+parser.add_argument("--user", help="RabbitMQ user option", default="guest")
+parser.add_argument("--password", help="RabbitMQ password option", default="guest")
 parser.add_argument(
-    "--rabbitmq-password", help="RabbitMQ password option", default="guest"
-)
-parser.add_argument(
-    "--rabbitmq-exchange",
+    "--exchange",
     help="RabbitMQ exchange used to send events",
     default="my_event_exchange",
 )
