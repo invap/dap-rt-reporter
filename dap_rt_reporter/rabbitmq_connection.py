@@ -23,7 +23,7 @@ class RabbitMQConnection:
         event_string = ""
 
         for item in event[:-1]:
-            event_string += item
+            event_string += str(item)
             event_string += ","
         event_string += event[-1]
 
