@@ -35,7 +35,7 @@ class Listener:
             csv_writer.writerow(report)
 
             if self.rabbitmq_connection:
-                self.rabbitmq_connection.publish(report)
+                self.rabbitmq_connection.publish_event(report)
 
     def add_event(self, breakpoint_id, event: Event):
         """Adds event to listen list, uses breakpoint id as identifier."""
