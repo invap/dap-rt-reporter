@@ -4,6 +4,7 @@
 import pika
 import logging
 
+
 class RabbitMQConnection:
     def __init__(self, host: str, port: str, user: str, password: str, exchange: str):
         """Manage the RabbitMQ server connection."""
@@ -43,7 +44,7 @@ class RabbitMQConnection:
         credentials = pika.PlainCredentials(username=self.user, password=self.password)
         parameters = pika.ConnectionParameters(
             host=self.host,
-            port=self.port,
+            port=int(self.port),
             credentials=credentials,
             connection_attempts=5,
             retry_delay=3,
@@ -60,16 +61,15 @@ class RabbitMQConnection:
         return connection, channel
 
     def disconnect(self):
-
         # Send termination
         self.channel.basic_publish(
             exchange=self.exchange,
             routing_key="events",
-            body="",
+            body=b"",
             properties=pika.BasicProperties(
                 delivery_mode=2, headers={"termination": True}
             ),
         )
 
         # Disconnect from server
-        #self.connection.close()
+        self.connection.close()
