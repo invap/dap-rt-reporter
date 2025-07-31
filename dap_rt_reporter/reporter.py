@@ -71,6 +71,7 @@ class Reporter:
                 response = self.debugger_connection.get_response()
                 response = Event.parse_dap_response(response)
 
+                logging.debug(f"DAP Response: {response}")
                 # Logic to control program execution
                 if response["type"] == DAPMessage.EVENT:
                     if (
