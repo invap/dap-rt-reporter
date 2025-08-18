@@ -4,6 +4,8 @@
 import re
 import json
 
+from typing import Any
+
 from abc import ABC, abstractmethod
 from dap_rt_reporter.types import DAPMessage
 from dap_rt_reporter.connection.connection_wrapper import ConnectionWrapper
@@ -13,15 +15,15 @@ class Event(ABC):
     """Event template"""
 
     def __init__(self, source_path: str, line: int, before: bool, name: str):
-        self.source_path = source_path
-        self.line = line
-        self.before = before
-        self.name = name
-        self.type = None
-        self.sub_type = None
+        self.source_path: str = source_path
+        self.line: int = line
+        self.before: bool = before
+        self.name: str = name
+        self.type:str = ""
+        self.sub_type:str = ""
 
     @staticmethod
-    def parse_dap_response(response: bytes):
+    def parse_dap_response(response: bytes) -> dict[str, Any]:
         """Converts DAP response to dictionary form."""
 
         if b"\r\n\r\n{" in response:
