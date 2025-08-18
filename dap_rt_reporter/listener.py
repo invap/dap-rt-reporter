@@ -5,7 +5,7 @@ import logging
 from typing import Literal
 
 from pika import BasicProperties
-from rt_rabbitmq_wrapper.rabbitmq_utility import publish_message
+from rt_rabbitmq_wrapper.rabbitmq_utility import publish_message, RabbitMQError
 
 from dap_rt_reporter.connection.connection_wrapper import ConnectionWrapper
 from dap_rt_reporter.event.event import Event
@@ -31,15 +31,19 @@ class Listener:
     ):
         """Handle breakpoint responses."""
 
+        # Set before or after key
         before_key: Literal['b'] | Literal['a'] = "b" if before else "a"
 
+        # Get breakpoint and thread id from response
         breakpoint_id = response["body"]["hitBreakpointIds"][0]
         thread_id = response["body"]["threadId"]
+        # Report each event in event list
         for event in self.events[breakpoint_id][before_key]:
             report = event.report(timestamp, debugger_connection, thread_id)
 
             logging.debug("Reporting event: %s", report)
 
+            # Write event
             csv_writer.writerow(report)
 
             if self.use_rabbitmq:
@@ -48,13 +52,18 @@ class Listener:
     def add_event(self, breakpoint_id, event: Event) -> None:
         """Adds event to listen list, uses breakpoint id as identifier."""
 
+        # Store event in events dict
+        # ID already exists, for events in the same line and source
         if breakpoint_id in self.events:
+            # Store event as before or after
             if event.before:
                 self.events[breakpoint_id]["b"].append(event)
             else:
                 self.events[breakpoint_id]["a"].append(event)
         else:
+            # Create structure for new ID
             self.events[breakpoint_id] = {}
+            # Store event as before or after
             if event.before:
                 self.events[breakpoint_id]["b"] = [event]
                 self.events[breakpoint_id]["a"] = []
@@ -76,9 +85,13 @@ class Listener:
         logging.debug("Publishing event: %s", event_string)
 
         # Publish event
-        publish_message(
-            rabbitmq_server_connection=rabbitmq_event_server_connection,
-            routing_key="events",
-            body=event_string,
-            properties=BasicProperties(delivery_mode=2),
-        )
+        try:
+            publish_message(
+                rabbitmq_server_connection=rabbitmq_event_server_connection,
+                routing_key="events",
+                body=event_string,
+                properties=BasicProperties(delivery_mode=2),
+            )
+        except RabbitMQError:
+            logging.debug(f"Error while publishing event: {event_string}")
+            exit(-2)

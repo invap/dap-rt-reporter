@@ -80,7 +80,6 @@ log_path = args.log
 force = args.f
 sut_args = " ".join(args.sut_args) if args.sut_args else ""
 debugger_selection = args.debugger
-use_rabbitmq = args.use_rabbitmq
 
 # Checks
 if not os.path.isfile(sut):
@@ -109,7 +108,7 @@ logging.basicConfig(
     encoding="utf-8", level=logging_level, format="%(levelname)s::%(message)s"
 )
 
-reporter = Reporter(sut, log_path, sut_args, debugger_selection)
+reporter = Reporter(sut, log_path, sut_args, debugger_selection, args.use_rabbitmq)
 
 # RabbitMQ configuration
 # Server configuration

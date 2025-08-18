@@ -222,13 +222,18 @@ class Reporter:
         logging.info("Closing debugger connection.")
         self.debugger_connection.close()
 
-        publish_message(
-            rabbitmq_server_connection=rabbitmq_event_server_connection,
-            routing_key="events",
-            body=b"",
-            properties=BasicProperties(
-                delivery_mode=2, headers={"termination": True}
-            ),
-        )
+        if self.use_rabbitmq:
+            try:
+                publish_message(
+                    rabbitmq_server_connection=rabbitmq_event_server_connection,
+                    routing_key="events",
+                    body=b"",
+                    properties=BasicProperties(
+                        delivery_mode=2, headers={"termination": True}
+                    ),
+                )
+            except RabbitMQError:
+                logging.debug("Error while publishing the termination message.")
+                exit(-2)
 
-        rabbitmq_event_server_connection.connection.close()
+            rabbitmq_event_server_connection.connection.close()
