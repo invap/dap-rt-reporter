@@ -56,7 +56,7 @@ class Reporter:
                 raise RuntimeError("Invalid debugger option.")
 
         # Create listener
-        self.listener = Listener()
+        self.listener = Listener(use_rabbitmq)
 
         self.execution_trace_log_path = execution_trace_log_path
         self.use_rabbitmq = use_rabbitmq
