@@ -7,6 +7,11 @@ import os
 import signal
 import logging
 
+from dap_rt_reporter.rabbitmq_connection.rabbitmq_server_configs import (
+    rabbitmq_server_config,
+    rabbitmq_event_exchange_config,
+)
+
 from dap_rt_reporter.types import ReportEvent
 from dap_rt_reporter.reporter import Reporter
 from dap_rt_reporter.event.checkpoint_reached_event import CheckpointReachedEvent
@@ -106,11 +111,14 @@ logging.basicConfig(
 
 reporter = Reporter(sut, log_path, sut_args, debugger_selection)
 
-#
-if use_rabbitmq:
-    reporter.connect_rabbitmq(
-        args.host, args.port, args.user, args.password, args.exchange
-    )
+# RabbitMQ configuration
+# Server configuration
+rabbitmq_server_config.host = args.host
+rabbitmq_server_config.port = args.port
+rabbitmq_server_config.user = args.user
+rabbitmq_server_config.password = args.password
+# Exchange configuration
+rabbitmq_event_exchange_config.exchange = args.exchange
 
 logging.info("Reading configuration file")
 # Read each line and add corresponding events
