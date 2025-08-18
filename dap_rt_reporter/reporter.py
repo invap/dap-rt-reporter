@@ -2,15 +2,30 @@
 # SPDX-License-Identifier: AGPL-3.0-or-later
 
 import csv
-import time
 import logging
+import time
 
-from dap_rt_reporter.connection.lldb_connection import LLDBConnection
+from pika import BasicProperties
+
+from rt_rabbitmq_wrapper.rabbitmq_utility import (
+    RabbitMQError,
+    connect_to_channel_exchange,
+    connect_to_server,
+    publish_message,
+)
+
 from dap_rt_reporter.connection.gdb_connection import GDBConnection
-from dap_rt_reporter.types import DAPEvent, DAPMessage
-from dap_rt_reporter.listener import Listener
+from dap_rt_reporter.connection.lldb_connection import LLDBConnection
 from dap_rt_reporter.event.event import Event
-from dap_rt_reporter.rabbitmq_connection import RabbitMQConnection
+from dap_rt_reporter.listener import Listener
+from dap_rt_reporter.rabbitmq_connection.rabbitmq_server_configs import (
+    rabbitmq_event_exchange_config,
+    rabbitmq_server_config,
+)
+from dap_rt_reporter.rabbitmq_connection.rabbitmq_server_connections import (
+    rabbitmq_event_server_connection,
+)
+from dap_rt_reporter.types import DAPEvent, DAPMessage
 
 
 class Reporter:
@@ -24,6 +39,7 @@ class Reporter:
         execution_trace_log_path: str,
         executable_args: str = "",
         debugger_selection: str = "gdb",
+        use_rabbitmq: bool = False,
     ) -> None:
         # Use debugger connection gdb/lldb
         self.debugger_selection = debugger_selection
@@ -43,13 +59,18 @@ class Reporter:
         self.listener = Listener()
 
         self.execution_trace_log_path = execution_trace_log_path
+        self.use_rabbitmq = use_rabbitmq
 
         # Used for saving events
         self.events = []
 
-    def execute(self):
+    def execute(self) -> bool:
         """Begins program execution and reporting."""
 
+        if self.use_rabbitmq:
+            self.connect_rabbitmq()
+
+        # Open csv file and start execution
         with open(self.execution_trace_log_path, "w") as report_file:
             csv_writer = csv.writer(report_file, delimiter=",")
 
@@ -68,6 +89,7 @@ class Reporter:
 
             terminated = False
             while not terminated and self.debugger_connection.get_alive():
+                # Get response from debugger
                 response = self.debugger_connection.get_response()
                 response = Event.parse_dap_response(response)
 
@@ -93,7 +115,7 @@ class Reporter:
 
         return terminated
 
-    def _set_up(self):
+    def _set_up(self) -> None:
         """Sets breakpoints and gives the events to listener."""
 
         logging.info("Setting breakpoints")
@@ -158,23 +180,55 @@ class Reporter:
                             )
                     breakpoint_verification = True
 
-    def connect_rabbitmq(self, host, port, user, password, exchange):
-        rabbitmq_connection = RabbitMQConnection(host, port, user, password, exchange)
+    def connect_rabbitmq(self) -> None:
+        """Set up connection to the RabbitMQ server and channel
+        """
 
-        self.listener.set_rabbitmq_connection(rabbitmq_connection)
+        # Connect to the RabbitMQ server
+        try:
+            rabbitmq_connection = connect_to_server(rabbitmq_server_config)
+        except RabbitMQError:
+            logging.critical("Error setting up the connection to the RabbitMQ server.")
+            exit(-2)
+        # Set up events channel
+        try:
+            events_channel = connect_to_channel_exchange(
+                rabbitmq_server_config=rabbitmq_server_config,
+                rabbitmq_exchange_config=rabbitmq_event_exchange_config,
+                connection=rabbitmq_connection,
+            )
+        except RabbitMQError:
+            logging.critical("Error setting up the events channel and exchange.")
+            exit(-2)
 
-    def set_event(self, event: Event):
+        rabbitmq_event_server_connection.connection = rabbitmq_connection
+        rabbitmq_event_server_connection.channel = events_channel
+        rabbitmq_event_server_connection.exchange = (
+            rabbitmq_event_exchange_config.exchange
+        )
+
+    def set_event(self, event: Event) -> None:
         """Set new event to report."""
 
         self.events.append(event)
 
-    def kill(self, segnum=0, frame=""):
+    def kill(self, segnum=0, frame="") -> None:
         """Kill reporter. Stops SUT execution but allow events set up to be completed."""
 
         logging.debug("Killing reporter at : %s and segnum %d", frame, segnum)
         self.debugger_connection.set_alive(False)
 
-    def close(self):
+    def close(self) -> None:
         logging.info("Closing debugger connection.")
         self.debugger_connection.close()
-        self.listener.close()
+
+        publish_message(
+            rabbitmq_server_connection=rabbitmq_event_server_connection,
+            routing_key="events",
+            body=b"",
+            properties=BasicProperties(
+                delivery_mode=2, headers={"termination": True}
+            ),
+        )
+
+        rabbitmq_event_server_connection.connection.close()
