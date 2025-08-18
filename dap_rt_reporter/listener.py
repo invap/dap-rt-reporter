@@ -93,5 +93,5 @@ class Listener:
                 properties=BasicProperties(delivery_mode=2),
             )
         except RabbitMQError:
-            logging.debug(f"Error while publishing event: {event_string}")
+            logging.critical(f"Error while publishing event: {event_string}")
             exit(-2)

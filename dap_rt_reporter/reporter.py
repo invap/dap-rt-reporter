@@ -233,7 +233,7 @@ class Reporter:
                     ),
                 )
             except RabbitMQError:
-                logging.debug("Error while publishing the termination message.")
+                logging.critical("Error while publishing the termination message.")
                 exit(-2)
 
             rabbitmq_event_server_connection.connection.close()
