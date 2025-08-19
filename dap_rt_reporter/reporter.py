@@ -4,6 +4,7 @@
 import csv
 import logging
 import time
+import sys
 
 from pika import BasicProperties
 
@@ -234,6 +235,6 @@ class Reporter:
                 )
             except RabbitMQError:
                 logging.critical("Error while publishing the termination message.")
-                exit(-2)
+                sys.exit(-2)
 
             rabbitmq_event_server_connection.connection.close()

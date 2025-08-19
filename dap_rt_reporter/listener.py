@@ -2,6 +2,7 @@
 # SPDX-License-Identifier: AGPL-3.0-or-later
 
 import logging
+import sys
 from typing import Literal
 
 from pika import BasicProperties
@@ -94,4 +95,4 @@ class Listener:
             )
         except RabbitMQError:
             logging.critical(f"Error while publishing event: {event_string}")
-            exit(-2)
+            sys.exit(-2)
