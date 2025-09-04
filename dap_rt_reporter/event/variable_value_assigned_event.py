@@ -2,7 +2,7 @@
 # SPDX-License-Identifier: AGPL-3.0-or-later
 
 from dap_rt_reporter.event.state_event import StateEvent
-from dap_rt_reporter.types import ReportEvent
+from dap_rt_reporter.types import ReportEventSubType
 
 
 class VariableValueAssignedEvent(StateEvent):
@@ -10,7 +10,7 @@ class VariableValueAssignedEvent(StateEvent):
 
     def __init__(self, source_path, line, before, name, expression):
         super().__init__(source_path, line, before, name)
-        self._set_sub_type(ReportEvent.VARIABLE_VALUE_ASSIGNED)
+        self._set_sub_type(ReportEventSubType.VARIABLE_VALUE_ASSIGNED)
         self.expression = expression
 
     def report(self, timestamp, debugger_connection, thread_id):

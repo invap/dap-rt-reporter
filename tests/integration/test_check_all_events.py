@@ -9,7 +9,7 @@ import csv
 import subprocess
 import unittest
 
-from dap_rt_reporter.types import ReportEvent, ReportEventType
+from dap_rt_reporter.types import ReportEventSubType, ReportEventType
 
 
 class TestCheckAllEvents(unittest.TestCase):
@@ -48,7 +48,7 @@ class TestCheckAllEvents(unittest.TestCase):
         events.append(
             [
                 ReportEventType.STATE_EVENT,
-                ReportEvent.VARIABLE_VALUE_ASSIGNED,
+                ReportEventSubType.VARIABLE_VALUE_ASSIGNED,
                 "var_x",
                 str(x),
             ]
@@ -56,35 +56,35 @@ class TestCheckAllEvents(unittest.TestCase):
         events.append(
             [
                 ReportEventType.STATE_EVENT,
-                ReportEvent.VARIABLE_VALUE_ASSIGNED,
+                ReportEventSubType.VARIABLE_VALUE_ASSIGNED,
                 "var_y",
                 str(y),
             ]
         )
         events.append(
-            [ReportEventType.TIMED_EVENT, ReportEvent.CLOCK_START, "sleep_clk"]
+            [ReportEventType.TIMED_EVENT, ReportEventSubType.CLOCK_START, "sleep_clk"]
         )
         events.append(
-            [ReportEventType.TIMED_EVENT, ReportEvent.CLOCK_PAUSE, "sleep_clk"]
+            [ReportEventType.TIMED_EVENT, ReportEventSubType.CLOCK_PAUSE, "sleep_clk"]
         )
         for i in range(10):
             events.append(
                 [
                     ReportEventType.STATE_EVENT,
-                    ReportEvent.VARIABLE_VALUE_ASSIGNED,
+                    ReportEventSubType.VARIABLE_VALUE_ASSIGNED,
                     "var_i",
                     str(i),
                 ]
             )
             events.append(
-                [ReportEventType.PROCESS_EVENT, ReportEvent.TASK_STARTED, "loop"]
+                [ReportEventType.PROCESS_EVENT, ReportEventSubType.TASK_STARTED, "loop"]
             )
             x *= 2
             y *= 3
             events.append(
                 [
                     ReportEventType.STATE_EVENT,
-                    ReportEvent.VARIABLE_VALUE_ASSIGNED,
+                    ReportEventSubType.VARIABLE_VALUE_ASSIGNED,
                     "var_x",
                     str(x),
                 ]
@@ -92,7 +92,7 @@ class TestCheckAllEvents(unittest.TestCase):
             events.append(
                 [
                     ReportEventType.STATE_EVENT,
-                    ReportEvent.VARIABLE_VALUE_ASSIGNED,
+                    ReportEventSubType.VARIABLE_VALUE_ASSIGNED,
                     "var_y",
                     str(y),
                 ]
@@ -100,7 +100,7 @@ class TestCheckAllEvents(unittest.TestCase):
             events.append(
                 [
                     ReportEventType.PROCESS_EVENT,
-                    ReportEvent.CHECKPOINT_REACHED,
+                    ReportEventSubType.CHECKPOINT_REACHED,
                     "loop_inv_chk",
                 ]
             )
@@ -114,18 +114,18 @@ class TestCheckAllEvents(unittest.TestCase):
                 ]
             )
             events.append(
-                [ReportEventType.PROCESS_EVENT, ReportEvent.TASK_FINISHED, "loop"]
+                [ReportEventType.PROCESS_EVENT, ReportEventSubType.TASK_FINISHED, "loop"]
             )
             events.append(
-                [ReportEventType.TIMED_EVENT, ReportEvent.CLOCK_RESET, "sleep_clk"]
+                [ReportEventType.TIMED_EVENT, ReportEventSubType.CLOCK_RESET, "sleep_clk"]
             )
             events.append(
-                [ReportEventType.TIMED_EVENT, ReportEvent.CLOCK_PAUSE, "sleep_clk"]
+                [ReportEventType.TIMED_EVENT, ReportEventSubType.CLOCK_PAUSE, "sleep_clk"]
             )
             events.append(
                 [
                     ReportEventType.PROCESS_EVENT,
-                    ReportEvent.CHECKPOINT_REACHED,
+                    ReportEventSubType.CHECKPOINT_REACHED,
                     "chk",
                 ]
             )

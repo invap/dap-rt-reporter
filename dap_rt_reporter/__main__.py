@@ -6,13 +6,14 @@ import argparse
 import os
 import signal
 import logging
+import tomllib
 
 from dap_rt_reporter.rabbitmq_connection.rabbitmq_server_configs import (
     rabbitmq_server_config,
     rabbitmq_event_exchange_config,
 )
 
-from dap_rt_reporter.types import ReportEvent
+from dap_rt_reporter.types import ReportEventSubType
 from dap_rt_reporter.reporter import Reporter
 from dap_rt_reporter.event.checkpoint_reached_event import CheckpointReachedEvent
 from dap_rt_reporter.event.task_started_event import TaskStartedEvent
@@ -58,18 +59,7 @@ parser.add_argument(
 
 # RabbitMQ configuration arguments
 parser.add_argument(
-    "--use-rabbitmq",
-    help="use RabbitMQ to send the report based on the configuration",
-    action="store_true",
-)
-parser.add_argument("--host", help="RabbitMQ host option", default="localhost")
-parser.add_argument("--port", help="RabbitMQ port option", default="5672")
-parser.add_argument("--user", help="RabbitMQ user option", default="guest")
-parser.add_argument("--password", help="RabbitMQ password option", default="guest")
-parser.add_argument(
-    "--exchange",
-    help="RabbitMQ exchange used to send events",
-    default="my_event_exchange",
+    "--rabbitmq-config-file", help="path to the rabbitmq configuration file"
 )
 
 args = parser.parse_args()
@@ -108,16 +98,25 @@ logging.basicConfig(
     encoding="utf-8", level=logging_level, format="%(levelname)s::%(message)s"
 )
 
-reporter = Reporter(sut, log_path, sut_args, debugger_selection, args.use_rabbitmq)
+use_rabbitmq = False
+if args.rabbitmq_config_file:
+    if not os.path.isfile(args.rabbitmq_config_file):
+        raise RuntimeError(f"No file named {args.rabbitmq_config_file}")
+    
+    # RabbitMQ configuration
+    use_rabbitmq = True
+    # Server configuration
+    with open(args.rabbitmq_config_file, "rb") as rabbitmq_file:
+        rabbitmq_config: dict = tomllib.load(rabbitmq_file)["exchange"]["events"]
 
-# RabbitMQ configuration
-# Server configuration
-rabbitmq_server_config.host = args.host
-rabbitmq_server_config.port = args.port
-rabbitmq_server_config.user = args.user
-rabbitmq_server_config.password = args.password
-# Exchange configuration
-rabbitmq_event_exchange_config.exchange = args.exchange
+    rabbitmq_server_config.host = rabbitmq_config
+    rabbitmq_server_config.port = args.port
+    rabbitmq_server_config.user = args.user
+    rabbitmq_server_config.password = args.password
+    # Exchange configuration
+    rabbitmq_event_exchange_config.exchange = args.exchange
+
+reporter = Reporter(sut, log_path, sut_args, debugger_selection, use_rabbitmq)
 
 logging.info("Reading configuration file")
 # Read each line and add corresponding events
@@ -136,7 +135,7 @@ with open(config_file, "r") as workflow_file:
         if len(row) > 3:
             args = row[3:]
         match event:
-            case ReportEvent.CHECKPOINT_REACHED:
+            case ReportEventSubType.CHECKPOINT_REACHED:
                 reporter.set_event(
                     CheckpointReachedEvent(
                         source_path=source_path,
@@ -145,7 +144,7 @@ with open(config_file, "r") as workflow_file:
                         name=event_name,
                     )
                 )
-            case ReportEvent.TASK_STARTED:
+            case ReportEventSubType.TASK_STARTED:
                 reporter.set_event(
                     TaskStartedEvent(
                         source_path=source_path,
@@ -154,7 +153,7 @@ with open(config_file, "r") as workflow_file:
                         name=event_name,
                     )
                 )
-            case ReportEvent.TASK_FINISHED:
+            case ReportEventSubType.TASK_FINISHED:
                 reporter.set_event(
                     TaskFinishedEvent(
                         source_path=source_path,
@@ -163,7 +162,7 @@ with open(config_file, "r") as workflow_file:
                         name=event_name,
                     )
                 )
-            case ReportEvent.VARIABLE_VALUE_ASSIGNED:
+            case ReportEventSubType.VARIABLE_VALUE_ASSIGNED:
                 reporter.set_event(
                     VariableValueAssignedEvent(
                         source_path=source_path,
@@ -173,7 +172,7 @@ with open(config_file, "r") as workflow_file:
                         expression=args[0],
                     )
                 )
-            case ReportEvent.CLOCK_START:
+            case ReportEventSubType.CLOCK_START:
                 reporter.set_event(
                     ClockStartEvent(
                         source_path=source_path,
@@ -182,7 +181,7 @@ with open(config_file, "r") as workflow_file:
                         name=event_name,
                     )
                 )
-            case ReportEvent.CLOCK_PAUSE:
+            case ReportEventSubType.CLOCK_PAUSE:
                 reporter.set_event(
                     ClockPauseEvent(
                         source_path=source_path,
@@ -191,7 +190,7 @@ with open(config_file, "r") as workflow_file:
                         name=event_name,
                     )
                 )
-            case ReportEvent.CLOCK_RESUME:
+            case ReportEventSubType.CLOCK_RESUME:
                 reporter.set_event(
                     ClockResumeEvent(
                         source_path=source_path,
@@ -200,7 +199,7 @@ with open(config_file, "r") as workflow_file:
                         name=event_name,
                     )
                 )
-            case ReportEvent.CLOCK_RESET:
+            case ReportEventSubType.CLOCK_RESET:
                 reporter.set_event(
                     ClockResetEvent(
                         source_path=source_path,
@@ -209,7 +208,7 @@ with open(config_file, "r") as workflow_file:
                         name=event_name,
                     )
                 )
-            case ReportEvent.COMPONENT_EVENT:
+            case ReportEventSubType.COMPONENT_EVENT:
                 reporter.set_event(
                     ComponentEvent(
                         source_path=source_path,

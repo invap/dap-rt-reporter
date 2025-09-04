@@ -7,7 +7,7 @@ import json
 from typing import Any
 
 from abc import ABC, abstractmethod
-from dap_rt_reporter.types import DAPMessage
+from dap_rt_reporter.types import DAPMessage, DAPRequest
 from dap_rt_reporter.connection.connection_wrapper import ConnectionWrapper
 
 
@@ -48,7 +48,7 @@ class Event(ABC):
 
             if (
                 response["type"] == DAPMessage.RESPONSE
-                and response["command"] == "stackTrace"
+                and response["command"] == DAPRequest.STACKTRACE
             ):
                 frame_id = response["body"]["stackFrames"][0]["id"]
 
@@ -61,7 +61,7 @@ class Event(ABC):
 
             if (
                 response["type"] == DAPMessage.RESPONSE
-                and response["command"] == "evaluate"
+                and response["command"] == DAPRequest.EVALUATE
             ):
                 if response["success"]:
                     result = response["body"]["result"]
@@ -93,5 +93,5 @@ class Event(ABC):
         self.sub_type = sub_type
 
     @abstractmethod
-    def report(self):
+    def report(self, timestamp, debugger_connection, thread_id) -> list[Any]:
         pass

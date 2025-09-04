@@ -6,7 +6,7 @@ import csv
 
 from dap_rt_reporter.reporter import Reporter
 from dap_rt_reporter.event.checkpoint_reached_event import CheckpointReachedEvent
-from dap_rt_reporter.types import ReportEvent, ReportEventType
+from dap_rt_reporter.types import ReportEventSubType, ReportEventType
 
 
 class TestCheckpointReached(unittest.TestCase):
@@ -41,16 +41,16 @@ class TestCheckpointReached(unittest.TestCase):
         events = []
 
         events.append(
-            [ReportEventType.PROCESS_EVENT, ReportEvent.CHECKPOINT_REACHED, "chk_0"]
+            [ReportEventType.PROCESS_EVENT, ReportEventSubType.CHECKPOINT_REACHED, "chk_0"]
         )
 
         for i in range(10):
             events.append(
-                [ReportEventType.PROCESS_EVENT, ReportEvent.CHECKPOINT_REACHED, "chk_1"]
+                [ReportEventType.PROCESS_EVENT, ReportEventSubType.CHECKPOINT_REACHED, "chk_1"]
             )
 
         events.append(
-            [ReportEventType.PROCESS_EVENT, ReportEvent.CHECKPOINT_REACHED, "chk_2"]
+            [ReportEventType.PROCESS_EVENT, ReportEventSubType.CHECKPOINT_REACHED, "chk_2"]
         )
 
         # Test if log matches

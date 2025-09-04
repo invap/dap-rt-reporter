@@ -26,7 +26,7 @@ from dap_rt_reporter.rabbitmq_connection.rabbitmq_server_configs import (
 from dap_rt_reporter.rabbitmq_connection.rabbitmq_server_connections import (
     rabbitmq_event_server_connection,
 )
-from dap_rt_reporter.types import DAPEvent, DAPMessage
+from dap_rt_reporter.types import DAPEvent, DAPMessage, DAPRequest
 
 
 class Reporter:
@@ -172,7 +172,7 @@ class Reporter:
                 # logging.debug("At breakpoint verification DAP response: %s", response)
                 if (
                     response["type"] == DAPMessage.RESPONSE
-                    and response["command"] == "setBreakpoints"
+                    and response["command"] == DAPRequest.SETBREAKPOINTS
                 ):
                     for breakpoint in response["body"]["breakpoints"]:
                         if not breakpoint["verified"]:

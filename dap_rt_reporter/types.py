@@ -19,9 +19,17 @@ class DAPEvent(StrEnum):
     TERMINATED = "terminated"
     OUTPUT = "output"
 
+class DAPRequest(StrEnum):
+    """
+    Enum class contains a selection of DAP requests
+    """
 
-class ReportEvent(StrEnum):
-    """Enum class contains the Reporter events currently supported"""
+    STACKTRACE = "stackTrace"
+    EVALUATE = "evaluate"
+    SETBREAKPOINTS = "setBreakpoints"
+
+class ReportEventSubType(StrEnum):
+    """Enum class contains the Reporter events sub types currently supported"""
 
     CHECKPOINT_REACHED = "checkpoint_reached"
     TASK_STARTED = "task_started"

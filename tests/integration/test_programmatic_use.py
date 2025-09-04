@@ -11,7 +11,7 @@ from dap_rt_reporter.event.checkpoint_reached_event import CheckpointReachedEven
 from dap_rt_reporter.event.variable_value_assigned_event import (
     VariableValueAssignedEvent,
 )
-from dap_rt_reporter.types import ReportEvent, ReportEventType
+from dap_rt_reporter.types import ReportEventSubType, ReportEventType
 
 
 class TestProgrammaticUse(unittest.TestCase):
@@ -56,7 +56,7 @@ class TestProgrammaticUse(unittest.TestCase):
         events.append(
             [
                 ReportEventType.PROCESS_EVENT,
-                ReportEvent.CHECKPOINT_REACHED,
+                ReportEventSubType.CHECKPOINT_REACHED,
                 "test_checkpoint",
             ]
         )
@@ -65,7 +65,7 @@ class TestProgrammaticUse(unittest.TestCase):
             events.append(
                 [
                     ReportEventType.STATE_EVENT,
-                    ReportEvent.VARIABLE_VALUE_ASSIGNED,
+                    ReportEventSubType.VARIABLE_VALUE_ASSIGNED,
                     "var_x",
                     str(2**(i + 1)),
                 ]
