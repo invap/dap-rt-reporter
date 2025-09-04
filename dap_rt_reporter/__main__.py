@@ -59,7 +59,18 @@ parser.add_argument(
 
 # RabbitMQ configuration arguments
 parser.add_argument(
-    "--rabbitmq-config-file", help="path to the rabbitmq configuration file"
+    "--use-rabbitmq",
+    help="use RabbitMQ to send the report based on the configuration",
+    action="store_true",
+)
+parser.add_argument("--host", help="RabbitMQ host option", default="localhost")
+parser.add_argument("--port", help="RabbitMQ port option", default="5672")
+parser.add_argument("--user", help="RabbitMQ user option", default="guest")
+parser.add_argument("--password", help="RabbitMQ password option", default="guest")
+parser.add_argument(
+    "--exchange",
+    help="RabbitMQ exchange used to send events",
+    default="my_event_exchange",
 )
 
 args = parser.parse_args()
@@ -98,25 +109,16 @@ logging.basicConfig(
     encoding="utf-8", level=logging_level, format="%(levelname)s::%(message)s"
 )
 
-use_rabbitmq = False
-if args.rabbitmq_config_file:
-    if not os.path.isfile(args.rabbitmq_config_file):
-        raise RuntimeError(f"No file named {args.rabbitmq_config_file}")
-    
-    # RabbitMQ configuration
-    use_rabbitmq = True
-    # Server configuration
-    with open(args.rabbitmq_config_file, "rb") as rabbitmq_file:
-        rabbitmq_config: dict = tomllib.load(rabbitmq_file)["exchange"]["events"]
+# RabbitMQ configuration
+# Server configuration
+rabbitmq_server_config.host = args.host
+rabbitmq_server_config.port = args.port
+rabbitmq_server_config.user = args.user
+rabbitmq_server_config.password = args.password
+# Exchange configuration
+rabbitmq_event_exchange_config.exchange = args.exchange
 
-    rabbitmq_server_config.host = rabbitmq_config
-    rabbitmq_server_config.port = args.port
-    rabbitmq_server_config.user = args.user
-    rabbitmq_server_config.password = args.password
-    # Exchange configuration
-    rabbitmq_event_exchange_config.exchange = args.exchange
-
-reporter = Reporter(sut, log_path, sut_args, debugger_selection, use_rabbitmq)
+reporter = Reporter(sut, log_path, sut_args, debugger_selection, args.use_rabbitmq)
 
 logging.info("Reading configuration file")
 # Read each line and add corresponding events
