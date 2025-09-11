@@ -1,36 +1,37 @@
 # Copyright (C) <2024>  INVAP S.E.
 # SPDX-License-Identifier: AGPL-3.0-or-later
 
-import csv
 import argparse
+import csv
+import logging
 import os
 import signal
-import logging
-import tomllib
 
-from dap_rt_reporter.rabbitmq_connection.rabbitmq_server_configs import (
-    rabbitmq_server_config,
-    rabbitmq_event_exchange_config,
+from dap_rt_reporter.event.checkpoint_reached_event import (
+    CheckpointReachedEvent,
 )
-
-from dap_rt_reporter.types import ReportEventSubType
-from dap_rt_reporter.reporter import Reporter
-from dap_rt_reporter.event.checkpoint_reached_event import CheckpointReachedEvent
-from dap_rt_reporter.event.task_started_event import TaskStartedEvent
-from dap_rt_reporter.event.task_finished_event import TaskFinishedEvent
-from dap_rt_reporter.event.variable_value_assigned_event import (
-    VariableValueAssignedEvent,
-)
-from dap_rt_reporter.event.clock_start import ClockStartEvent
 from dap_rt_reporter.event.clock_pause import ClockPauseEvent
 from dap_rt_reporter.event.clock_reset import ClockResetEvent
 from dap_rt_reporter.event.clock_resume import ClockResumeEvent
+from dap_rt_reporter.event.clock_start import ClockStartEvent
 from dap_rt_reporter.event.component_event import ComponentEvent
+from dap_rt_reporter.event.task_finished_event import TaskFinishedEvent
+from dap_rt_reporter.event.task_started_event import TaskStartedEvent
+from dap_rt_reporter.event.variable_value_assigned_event import (
+    VariableValueAssignedEvent,
+)
+from dap_rt_reporter.rabbitmq_connection.rabbitmq_server_configs import (
+    rabbitmq_event_exchange_config,
+    rabbitmq_server_config,
+)
+from dap_rt_reporter.reporter import Reporter
+from dap_rt_reporter.types import ReportEventSubType
 
 # Parser arguments
 parser = argparse.ArgumentParser(
     prog="dap_reporter",
-    description="Tool to configure, execute the SUT and then report the execution trace report",
+    description="""Tool to configure, execute the SUT and
+    then report the execution trace report""",
     usage="""
         python3 -m dap_reporter.py --sut path_to_sut --desc path_to_desc --log path_to_log
         If the log file already exists you can force rewrite with -f flag.
@@ -38,9 +39,13 @@ parser = argparse.ArgumentParser(
         """,
 )
 
-parser.add_argument("--sut", help="binary of the program to report", required=True)
+parser.add_argument(
+    "--sut", help="binary of the program to report", required=True
+)
 parser.add_argument("--desc", help="configuration file", required=True)
-parser.add_argument("--log", help="log file to store report", default="execution.csv")
+parser.add_argument(
+    "--log", help="log file to store report", default="execution.csv"
+)
 parser.add_argument("-f", help="force log rewrite", action="store_true")
 parser.add_argument("--sut-args", help="add argument for SUT", nargs="+")
 parser.add_argument(
@@ -66,7 +71,9 @@ parser.add_argument(
 parser.add_argument("--host", help="RabbitMQ host option", default="localhost")
 parser.add_argument("--port", help="RabbitMQ port option", default="5672")
 parser.add_argument("--user", help="RabbitMQ user option", default="guest")
-parser.add_argument("--password", help="RabbitMQ password option", default="guest")
+parser.add_argument(
+    "--password", help="RabbitMQ password option", default="guest"
+)
 parser.add_argument(
     "--exchange",
     help="RabbitMQ exchange used to send events",
@@ -88,7 +95,9 @@ if not os.path.isfile(sut):
 if not os.path.isfile(config_file):
     raise RuntimeError(f"No file named {config_file} exists.")
 if os.path.isfile(log_path) and not force:
-    raise RuntimeError(f"Warning: {log_path} already exists, use -f to force rewrite.")
+    raise RuntimeError(
+        f"Warning: {log_path} already exists, use -f to force rewrite."
+    )
 
 # Logging level
 match args.log_level:
@@ -118,11 +127,13 @@ rabbitmq_server_config.password = args.password
 # Exchange configuration
 rabbitmq_event_exchange_config.exchange = args.exchange
 
-reporter = Reporter(sut, log_path, sut_args, debugger_selection, args.use_rabbitmq)
+reporter = Reporter(
+    sut, log_path, sut_args, debugger_selection, args.use_rabbitmq
+)
 
 logging.info("Reading configuration file")
 # Read each line and add corresponding events
-with open(config_file, "r") as workflow_file:
+with open(config_file, "r", encoding="utf8") as workflow_file:
     workflow_reader = csv.reader(workflow_file, delimiter=",")
 
     for row in workflow_reader:
