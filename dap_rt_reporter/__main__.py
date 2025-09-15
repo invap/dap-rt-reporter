@@ -20,10 +20,7 @@ from dap_rt_reporter.event.task_started_event import TaskStartedEvent
 from dap_rt_reporter.event.variable_value_assigned_event import (
     VariableValueAssignedEvent,
 )
-from dap_rt_reporter.rabbitmq_connection.rabbitmq_server_configs import (
-    rabbitmq_event_exchange_config,
-    rabbitmq_server_config,
-)
+from dap_rt_reporter.rabbitmq_connection import rabbitmq_server_connections
 from dap_rt_reporter.reporter import Reporter
 from dap_rt_reporter.types import ReportEventSubType
 
@@ -40,17 +37,21 @@ parser = argparse.ArgumentParser(
 )
 
 parser.add_argument(
-    "--sut", help="binary of the program to report", required=True
+    "--sut", help="path to the binary of the program to report", required=True
 )
-parser.add_argument("--desc", help="configuration file", required=True)
 parser.add_argument(
-    "--log", help="log file to store report", default="execution.csv"
+    "--desc", help="path to the configuration file", required=True
+)
+parser.add_argument(
+    "--log",
+    help="path to the log file to store report",
+    default="execution.csv",
 )
 parser.add_argument("-f", help="force log rewrite", action="store_true")
 parser.add_argument("--sut-args", help="add argument for SUT", nargs="+")
 parser.add_argument(
     "--debugger",
-    "-deb",
+    "--deb",
     help="debugger selection",
     choices=["gdb", "lldb"],
     default="gdb",
@@ -64,20 +65,10 @@ parser.add_argument(
 
 # RabbitMQ configuration arguments
 parser.add_argument(
-    "--use-rabbitmq",
-    help="use RabbitMQ to send the report based on the configuration",
-    action="store_true",
-)
-parser.add_argument("--host", help="RabbitMQ host option", default="localhost")
-parser.add_argument("--port", help="RabbitMQ port option", default="5672")
-parser.add_argument("--user", help="RabbitMQ user option", default="guest")
-parser.add_argument(
-    "--password", help="RabbitMQ password option", default="guest"
-)
-parser.add_argument(
-    "--exchange",
-    help="RabbitMQ exchange used to send events",
-    default="my_event_exchange",
+    "--rabbitmq-config-file",
+    "--rc",
+    help="path to the TOML file containing the RabbitMQ server configuration.",
+    default="",
 )
 
 args = parser.parse_args()
@@ -102,34 +93,38 @@ if os.path.isfile(log_path) and not force:
 # Logging level
 match args.log_level:
     case "info":
-        logging_level = logging.INFO
+        LOGGING_LEVEL = logging.INFO
     case "debug":
-        logging_level = logging.DEBUG
+        LOGGING_LEVEL = logging.DEBUG
     case "warning":
-        logging_level = logging.WARNING
+        LOGGING_LEVEL = logging.WARNING
     case "error":
-        logging_level = logging.ERROR
+        LOGGING_LEVEL = logging.ERROR
     case "critical":
-        logging_level = logging.CRITICAL
+        LOGGING_LEVEL = logging.CRITICAL
     case _:
         raise RuntimeError(f"Level {args.log_level} is not a valid option.")
 
 logging.basicConfig(
-    encoding="utf-8", level=logging_level, format="%(levelname)s::%(message)s"
+    encoding="utf-8", level=LOGGING_LEVEL, format="%(levelname)s::%(message)s"
 )
 
 # RabbitMQ configuration
-# Server configuration
-rabbitmq_server_config.host = args.host
-rabbitmq_server_config.port = args.port
-rabbitmq_server_config.user = args.user
-rabbitmq_server_config.password = args.password
-# Exchange configuration
-rabbitmq_event_exchange_config.exchange = args.exchange
+USE_RABBITMQ = False
+if os.path.isfile(args.rabbitmq_config_file):
+    USE_RABBITMQ = True
+    rabbitmq_server_connections.build_rabbitmq_connection_from_toml(
+        args.rabbitmq_config_file
+    )
+    logging.info(
+        "RabbitMQ connection established, writing results to exchange."
+    )
+else:
+    logging.info(
+        "No valid RabbitMQ configuration file, saving results to file."
+    )
 
-reporter = Reporter(
-    sut, log_path, sut_args, debugger_selection, args.use_rabbitmq
-)
+reporter = Reporter(sut, log_path, sut_args, debugger_selection, USE_RABBITMQ)
 
 logging.info("Reading configuration file")
 # Read each line and add corresponding events
@@ -235,6 +230,12 @@ with open(config_file, "r", encoding="utf8") as workflow_file:
             case _:
                 raise RuntimeError(f"Event {event} is undefined.")
 
+# Set SIGINT signal to handle closing during execution
 signal.signal(signal.SIGINT, reporter.kill)
+
+# Execute SUT with breakpoints
 reporter.execute()
+
+# Close reporter and RabbitMQ connection
 reporter.close()
+rabbitmq_server_connections.rabbitmq_event_server_connection.close()
