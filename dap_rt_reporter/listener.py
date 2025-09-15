@@ -10,9 +10,7 @@ from rt_rabbitmq_wrapper.rabbitmq_utility import RabbitMQError
 
 from dap_rt_reporter.connection.connection_wrapper import ConnectionWrapper
 from dap_rt_reporter.event.event import Event
-from dap_rt_reporter.rabbitmq_connection.rabbitmq_server_connections import (
-    rabbitmq_event_server_connection,
-)
+from dap_rt_reporter.rabbitmq_connection import rabbitmq_server_connections
 
 
 class Listener:
@@ -87,7 +85,7 @@ class Listener:
 
         # Publish event
         try:
-            rabbitmq_event_server_connection.publish_message(
+            rabbitmq_server_connections.rabbitmq_event_server_connection.publish_message(
                 body=event_string,
                 properties=BasicProperties(delivery_mode=2),
             )
@@ -101,14 +99,12 @@ class Listener:
         """
 
         try:
-            rabbitmq_event_server_connection.publish_message(
+            rabbitmq_server_connections.rabbitmq_event_server_connection.publish_message(
                 body="",
                 properties=BasicProperties(
                     delivery_mode=2, headers={"termination": True}
                 ),
             )
         except RabbitMQError:
-            logging.critical(
-                "Error while publishing the termination message."
-            )
+            logging.critical("Error while publishing the termination message.")
             sys.exit(-2)
