@@ -6,7 +6,7 @@ import sys
 from typing import Literal
 
 from pika import BasicProperties
-from rt_rabbitmq_wrapper.rabbitmq_utility import publish_message, RabbitMQError
+from rt_rabbitmq_wrapper.rabbitmq_utility import RabbitMQError
 
 from dap_rt_reporter.connection.connection_wrapper import ConnectionWrapper
 from dap_rt_reporter.event.event import Event
@@ -33,7 +33,7 @@ class Listener:
         """Handle breakpoint responses."""
 
         # Set before or after key
-        before_key: Literal['b'] | Literal['a'] = "b" if before else "a"
+        before_key: Literal["b"] | Literal["a"] = "b" if before else "a"
 
         # Get breakpoint and thread id from response
         breakpoint_id = response["body"]["hitBreakpointIds"][0]
@@ -87,12 +87,28 @@ class Listener:
 
         # Publish event
         try:
-            publish_message(
-                rabbitmq_server_connection=rabbitmq_event_server_connection,
-                routing_key="events",
+            rabbitmq_event_server_connection.publish_message(
                 body=event_string,
                 properties=BasicProperties(delivery_mode=2),
             )
         except RabbitMQError:
-            logging.critical(f"Error while publishing event: {event_string}")
+            logging.critical("Error while publishing event: %s", event_string)
+            sys.exit(-2)
+
+    def publish_termination(self) -> None:
+        """Publish a blank message with the termination header, closes
+        connection with monitor.
+        """
+
+        try:
+            rabbitmq_event_server_connection.publish_message(
+                body="",
+                properties=BasicProperties(
+                    delivery_mode=2, headers={"termination": True}
+                ),
+            )
+        except RabbitMQError:
+            logging.critical(
+                "Error while publishing the termination message."
+            )
             sys.exit(-2)
