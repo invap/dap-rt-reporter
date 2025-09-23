@@ -92,5 +92,5 @@ def build_rabbitmq_connection_from_toml(toml_path: str):
         try:
             rabbitmq_event_server_connection.connect()
         except RabbitMQError:
-            logging.error("Couldn't connect ro RabbitMQ server.")
+            logging.error("Couldn't connect to RabbitMQ server.")
             sys.exit(-2)
