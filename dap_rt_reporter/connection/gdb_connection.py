@@ -10,6 +10,13 @@ class GDBConnection(ConnectionWrapper):
     """Wrapper for the connection between the DAP client and debugger."""
 
     def __init__(self, executable: str, executable_args: str) -> None:
+        """Initialize connection with GDB via DAP.
+
+        Args:
+            executable (str): Path to the executable file to debug.
+            executable_args (str): Arguments for the executable.
+        """
+
         super().__init__(executable, executable_args)
         self.alive = True
 
@@ -20,14 +27,21 @@ class GDBConnection(ConnectionWrapper):
 
         self.response_buffer = b""
 
-    def _send(self):
-        """Clears the DAP client buffer and writes the commands to the stdio pipe."""
+    def _send(self) -> None:
+        """Clears the DAP client buffer and writes the commands
+        to the stdio pipe.
+        """
 
         command = self.dap_client.send()
         self.stdio_handler.write(command)
 
     def get_response(self) -> bytes:
-        """Gets next response from buffer or debugger. If not alive return empty response."""
+        """Gets next response from buffer or debugger. If not alive return
+        empty response.
+
+        Returns:
+            bytes: Complete DAP response as bytes.
+        """
 
         while self.alive:
             if b"\r\n\r\n{" in self.response_buffer:

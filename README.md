@@ -57,7 +57,7 @@ from dap_rt_reporter.event.variable_value_assigned_event import (
 # Binary, log paths and source
 sut_path = "tests/integration/resources/simple_test/target/debug/simple_test"
 execution_log = "execute.log"
-source_path = "tests/integration/resources/simple_test/src/main.rs
+source_path = "tests/integration/resources/simple_test/src/main.rs"
 # Initialize reporter
 reporter = Reporter(
     executable_path=sut_path, execution_trace_log_path=execution_log

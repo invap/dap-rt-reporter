@@ -20,9 +20,10 @@ class Event(ABC):
         """Initialize new event.
 
         Args:
-            source_path (str): Source path asociated with the event.
-            line (int): Line asociated with the event.
-            before (bool): Select if event should report before a line is executed.
+            source_path (str): Source path associated with the event.
+            line (int): Line associated with the event.
+            before (bool): Select if event should report before a line
+            is executed.
             name (str): Name for the event.
         """
         self.source_path: str = source_path
@@ -63,7 +64,8 @@ class Event(ABC):
         Args:
             expression (str): Expression to evaluate.
             thread_id (int): Thread ID to evaluate at.
-            debugger_connection (ConnectionWrapper): Connection to use to make the request.
+            debugger_connection (ConnectionWrapper): Connection to use to make
+            the request.
 
         Raises:
             RuntimeError: _description_
