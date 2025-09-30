@@ -2,8 +2,11 @@
 # SPDX-License-Identifier: AGPL-3.0-or-later
 
 import dap
+import logging
 from dap_rt_reporter.connection.stdio_handler import STDIOHandler
 from dap_rt_reporter.connection.connection_wrapper import ConnectionWrapper
+
+logger = logging.getLogger(__name__)
 
 
 class LLDBConnection(ConnectionWrapper):
@@ -19,12 +22,15 @@ class LLDBConnection(ConnectionWrapper):
         self.dap_client = dap.Client("DAP Client")
 
         self.response_buffer = b""
+        self.receive_message_count = 0
+        self.send_message_count = 0
 
     def _send(self):
         """Clears the DAP client buffer and writes the commands to the stdio pipe."""
 
         command = self.dap_client.send()
         self.stdio_handler.write(command)
+        self.send_message_count += 1
 
     def get_response(self) -> bytes:
         """Gets next response from buffer or debugger. If not alive return empty response."""
@@ -37,6 +43,7 @@ class LLDBConnection(ConnectionWrapper):
                 if length <= len(self.response_buffer):
                     response = self.response_buffer[:length]
                     self.response_buffer = self.response_buffer[length:]
+                    self.receive_message_count += 1
                     return response
 
             partial_response = self.stdio_handler.read()
@@ -105,3 +112,5 @@ class LLDBConnection(ConnectionWrapper):
         """Kill debugger subprocess."""
 
         self.stdio_handler.close()
+        logger.info("Messages received: %s", self.receive_message_count)
+        logger.info("Messages sent: %s", self.send_message_count)

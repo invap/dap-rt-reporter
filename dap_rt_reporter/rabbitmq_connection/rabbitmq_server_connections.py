@@ -8,6 +8,8 @@ from rt_rabbitmq_wrapper.rabbitmq_utility import (
     RabbitMQError,
 )
 
+logger = logging.getLogger(__name__)
+
 rabbitmq_event_server_connection = None
 
 
@@ -33,7 +35,7 @@ def build_rabbitmq_connection_from_toml(toml_path: str):
         try:
             events_rabbitmq_config = rabbitmq_config["exchanges"]["events"]
         except KeyError:
-            logging.info(
+            logger.info(
                 "No events configuration in toml file, using default values."
             )
         else:
@@ -92,5 +94,5 @@ def build_rabbitmq_connection_from_toml(toml_path: str):
         try:
             rabbitmq_event_server_connection.connect()
         except RabbitMQError:
-            logging.error("Couldn't connect to RabbitMQ server.")
+            logger.error("Couldn't connect to RabbitMQ server.")
             sys.exit(-2)

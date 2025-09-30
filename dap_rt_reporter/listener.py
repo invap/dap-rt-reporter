@@ -23,6 +23,8 @@ from dap_rt_reporter.connection.connection_wrapper import ConnectionWrapper
 from dap_rt_reporter.event.event import Event
 from dap_rt_reporter.rabbitmq_connection import rabbitmq_server_connections
 
+logger = logging.getLogger(__name__)
+
 
 class Listener:
     def __init__(self, use_rabbitmq: bool = False) -> None:
@@ -51,7 +53,7 @@ class Listener:
         for event in self.events[breakpoint_id][before_key]:
             report = event.report(timestamp, debugger_connection, thread_id)
 
-            logging.debug("Reporting event: %s", report)
+            logger.debug("Reporting event: %s", report)
 
             # Write event
             csv_writer.writerow(report)
@@ -89,18 +91,18 @@ class Listener:
         try:
             event_u = EventCSVCoDec.from_csv(event_string)
         except EventCSVError:
-            logging.info("Error when parsing event csv: %s", event_string)
+            logger.info("Error when parsing event csv: %s", event_string)
             sys.exit(-1)
         
         try:
             event_dict = EventDictCoDec.to_dict(event_u)
         except EventTypeError:
-            logging.info(
+            logger.info(
                 "Error building event dictionary from event: %s", event_u
             )
             sys.exit(-1)
 
-        logging.debug("Publishing event: %s", event)
+        logger.debug("Publishing event: %s", event)
 
         # Publish event
         try:
@@ -109,7 +111,7 @@ class Listener:
                 properties=BasicProperties(delivery_mode=2),
             )
         except RabbitMQError:
-            logging.critical("Error while publishing event: %s", event)
+            logger.critical("Error while publishing event: %s", event)
             sys.exit(-2)
 
     def publish_termination(self) -> None:
@@ -125,5 +127,5 @@ class Listener:
                 ),
             )
         except RabbitMQError:
-            logging.critical("Error while publishing the termination message.")
+            logger.critical("Error while publishing the termination message.")
             sys.exit(-2)

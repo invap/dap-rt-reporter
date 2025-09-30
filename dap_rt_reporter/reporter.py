@@ -11,6 +11,8 @@ from dap_rt_reporter.event.event import Event
 from dap_rt_reporter.listener import Listener
 from dap_rt_reporter.types import DAPEvent, DAPMessage, DAPRequest
 
+logger = logging.getLogger(__name__)
+
 
 class Reporter:
     """Connects DAP client and GDB then uses output to report
@@ -67,6 +69,8 @@ class Reporter:
         Returns:
             bool: Indicates program termination.
         """
+
+        init_time = time.time()
         # Open csv file and start execution
         with open(
             self.execution_trace_log_path, "w", encoding="utf8"
@@ -83,7 +87,7 @@ class Reporter:
                     self._set_up()
 
             # Start execution after configuration done is received
-            logging.info("Starting SUT execution")
+            logger.info("Starting SUT execution")
             self.debugger_connection.configuration_done()
 
             terminated = False
@@ -92,7 +96,7 @@ class Reporter:
                 response = self.debugger_connection.get_response()
                 response = Event.parse_dap_response(response)
 
-                logging.debug("DAP Response: %s", response)
+                logger.debug("DAP Response: %s", response)
                 # Logic to control program execution
                 if response["type"] == DAPMessage.EVENT:
                     if (
@@ -110,7 +114,8 @@ class Reporter:
                     elif response["event"] == DAPEvent.TERMINATED:
                         terminated = True
 
-        logging.info("Closing reporter")
+        logger.info("Closing reporter")
+        logger.info("Program execution time: %s", time.time() - init_time)
 
         return terminated
 
@@ -121,7 +126,7 @@ class Reporter:
             RuntimeError: _description_
         """
 
-        logging.info("Setting breakpoints")
+        logger.info("Setting breakpoints")
         # Create breakpoint locations
         breakpoint_locations: dict[str, dict[int, list[Event]]] = {}
         for event in self.events:
@@ -159,7 +164,7 @@ class Reporter:
             source_dap_form = {"name": source, "path": source_path}
 
             # Set breakpoints and clear previous ones
-            logging.debug(
+            logger.debug(
                 "Setting breakpoints for %s", source_dap_form["name"]
             )
             self.debugger_connection.set_breakpoints_source(
@@ -176,7 +181,7 @@ class Reporter:
                 response = self.debugger_connection.get_response()
                 response = Event.parse_dap_response(response)
 
-                logging.debug(
+                logger.debug(
                     "At breakpoint verification DAP response: %s", response
                 )
                 if (
@@ -199,15 +204,11 @@ class Reporter:
 
         self.events.append(event)
 
-    def kill(self, segnum=0, frame="") -> None:
-        """Stops SUT execution but allow events set up to be completed.
-
-        Args:
-            segnum (int, optional): Segment number intented to be used with signal library. Defaults to 0.
-            frame (str, optional): Frame intented to be used with signal library. Defaults to "".
+    def kill(self) -> None:
+        """Deactivate debugger connection and stop SUT execution, set up
+        is allowed to finish.
         """
 
-        logging.debug("Killing reporter at : %s and segnum %d", frame, segnum)
         self.debugger_connection.set_alive(False)
 
     def close(self) -> None:
@@ -215,7 +216,7 @@ class Reporter:
         flag was set.
         """
 
-        logging.info("Closing debugger connection.")
+        logger.info("Closing debugger connection.")
         self.debugger_connection.close()
 
         if self.use_rabbitmq:
