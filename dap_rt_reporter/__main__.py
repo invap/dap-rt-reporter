@@ -189,7 +189,7 @@ def main():
         description="""Tool to configure, execute the SUT and
         then report the execution trace report""",
         usage="""
-            python3 -m dap_reporter.py --sut path_to_sut --desc path_to_desc --log path_to_log
+            python3 -m dap_reporter.py --sut SUT --configuration-file CONFIG_FILE --report-file REPORT_FILE
             If the log file already exists you can force rewrite with -f flag.
             To pass arguments to the executable use --sut-args, for example --sut-args "-p 1234".
             """,
