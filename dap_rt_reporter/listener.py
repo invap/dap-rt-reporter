@@ -56,10 +56,10 @@ class Listener:
             logger.debug("Reporting event: %s", report)
 
             # Write event
-            csv_writer.writerow(report)
-
             if self.use_rabbitmq:
                 self.publish_event(report)
+            else:
+                csv_writer.writerow(report)
 
     def add_event(self, breakpoint_id, event: Event) -> None:
         """Adds event to listen list, uses breakpoint id as identifier."""
