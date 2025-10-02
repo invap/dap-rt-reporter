@@ -294,7 +294,6 @@ def main():
 
     logging.getLogger().handlers.clear()
     if args.log_file is None:
-        print("OK")
         handler = logging.StreamHandler()
     else:
         handler = logging.FileHandler(args.log_file)
