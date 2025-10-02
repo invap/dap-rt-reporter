@@ -39,7 +39,8 @@ Python library to configure, execute the SUT and then report the execution trace
     poetry env activate
     poetry run python -m dap_rt_reporter\
       --sut tests/integration/resources/simple_test/target/debug/simple_test \
-      --desc tests/integration/resources/simple_test_config.csv --log execute.log
+      --configuration-file tests/integration/resources/simple_test_config.csv \
+      --report-file execute.log
     ```
 
 ## Usage
@@ -93,14 +94,23 @@ It can also be used as a program instead, to run use the following command.
 
 ``` sh
 python -m dap_rt_reporter --sut sut_binary \
---desc process_descriptor_file --log log_file
+--configuration-file process_descriptor_file \ 
+--report-file log_file
+```
+
+Or the short version:
+
+``` sh
+python -m dap_rt_reporter --s sut_binary \
+--cf process_descriptor_file \ 
+--rf log_file
 ```
 
 In order to run the program you need the following things:
 
 1. A compiled binary with debugging symbols.
 1. A csv file with the execution report specification which is described below.
-1. A path to the resulting log. If the log file already exists you must use -f
+1. A path to the resulting events trace. If the file already exists you must use the -f
 flag to overwrite it.
 
 ## Execution report specification
@@ -111,13 +121,15 @@ In order to specify the program execution a file with the following format is ne
 [SOURCE]:[LINE]:[b|a],[EVENT],[EVENT_NAME],[*ARGS]
 ```
 
-Each line of the descriptor file represents an event which is correlated with the SUT. The reporter takes as input this descriptor and uses it to output the behavior of the SUT, this log file is then used by the monitor to assert if the behavior matches the modeled behavior.
+Each line of the configuration file represents an event which is correlated with the SUT.
+The reporter takes as input this descriptor and uses it to output the behavior of the SUT,
+this log file is then used by the monitor to assert if the behavior matches the modeled behavior.
 
 The events are described by:
 
 1. SOURCE: Source file in which the event happens.
 1. LINE: Line which correlates with the event.
-1. Before|After: indicates if the event should be reported before or after line execution.
+1. BEFORE|AFTER: indicates if the event should be reported before or after line execution.
 1. EVENT: current accepted events are specified below.
 1. EVENT_NAME: name used when reporting.
 1. *ARGS: extra arguments used by certain events.
