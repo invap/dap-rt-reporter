@@ -36,6 +36,16 @@ def dap_rt_reporter_runner(
     use_rabbitmq: bool,
     config_file: str,
 ):
+    """Run Reporter with given configuration.
+
+    Args:
+        sut (str): Program to report.
+        report_file (str): Path to the file to store the event trace.
+        sut_args (str): Arguments for the SUT.
+        debugger_selection (str): Debugger selection for reporting.
+        use_rabbitmq (bool): Flag to turn the use of RabbitMQ to send the event trace.
+        config_file (str): Event configuration file.
+    """
     # Set SIGINT handler to handle closing during execution
     def sigint_handler(signum, frame):
         logger.debug("Received SIGINT signal: %s and segnum %d", frame, signum)
@@ -43,6 +53,7 @@ def dap_rt_reporter_runner(
 
     signal.signal(signal.SIGINT, sigint_handler)
 
+    # Create and configure reporter
     reporter = Reporter(
         sut, report_file, sut_args, debugger_selection, use_rabbitmq
     )
@@ -52,17 +63,26 @@ def dap_rt_reporter_runner(
     # Execute SUT with breakpoints
     reporter.execute()
 
-    # Close reporter and RabbitMQ connection
+    # Close reporter
     reporter.close()
 
 
 def parse_configuration_file(reporter: Reporter, config_file: str):
+    """Parse configuration file and set events.
+
+    Args:
+        reporter (Reporter): Reporter.
+        config_file (str): Event configuration file.
+
+    Raises:
+        RuntimeError: _description_
+    """
     logger.info("Reading configuration file")
     # Read each line and add corresponding events
-    with open(config_file, "r", encoding="utf8") as workflow_file:
-        workflow_reader = csv.reader(workflow_file, delimiter=",")
+    with open(config_file, "r", encoding="utf8") as events_file:
+        events_reader = csv.reader(events_file, delimiter=",")
 
-        for row in workflow_reader:
+        for row in events_reader:
             # Split the breakpoint descriptor
             source_path, line, before = row[0].split(":")
             before = before == "b"
@@ -173,9 +193,11 @@ def main():
             If the log file already exists you can force rewrite with -f flag.
             To pass arguments to the executable use --sut-args, for example --sut-args "-p 1234".
             """,
+        allow_abbrev=False,
     )
 
     parser.add_argument(
+        "-s",
         "--sut",
         help="path to the binary of the program to report",
         required=True,
@@ -193,12 +215,12 @@ def main():
         default="execution.csv",
     )
     parser.add_argument(
-        "--force", "-f", help="force report file rewrite", action="store_true"
+        "-f", "--force", help="force report file rewrite", action="store_true"
     )
     parser.add_argument("--sut-args", help="add argument for SUT", nargs="+")
     parser.add_argument(
+        "-d",
         "--debugger",
-        "--deb",
         help="debugger selection",
         choices=["gdb", "lldb"],
         default="gdb",
@@ -218,8 +240,8 @@ def main():
     # RabbitMQ configuration arguments
     parser.add_argument(
         "--rabbitmq-config-file",
-        "--rc",
-        help="path to the TOML file containing the RabbitMQ server configuration.",
+        "--rcf",
+        help="path to the TOML file with the RabbitMQ server configuration.",
         default="",
     )
 
@@ -259,15 +281,17 @@ def main():
                 f"Level {args.log_level} is not a valid option."
             )
 
-    formatter = logging.Formatter(
-        "%(asctime)s : [%(name)s:%(levelname)s] - %(message)s"
-    )
-
+    # Logger configuration
     logging.basicConfig(
         encoding="utf-8",
         level=LOGGING_LEVEL,
         format="%(asctime)s : [%(name)s:%(levelname)s] - %(message)s",
     )
+
+    formatter = logging.Formatter(
+        "%(asctime)s : [%(name)s:%(levelname)s] - %(message)s"
+    )
+
     logging.getLogger().handlers.clear()
     if args.log_file is None:
         print("OK")

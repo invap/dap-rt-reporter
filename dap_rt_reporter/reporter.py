@@ -31,7 +31,7 @@ class Reporter:
 
         Args:
             executable_path (str): Path to the SUT executable.
-            execution_trace_log_path (str): Path to the output  file
+            execution_trace_log_path (str): Path to the output  file.
             executable_args (str, optional): Arguments to pass to the SUT. Defaults to "".
             debugger_selection (str, optional): Select debugger to use during execution, accepted options are gdb and lldb. Defaults to "gdb".
             use_rabbitmq (bool, optional): Flag to set when using RabbitMQ server. Defaults to False.
