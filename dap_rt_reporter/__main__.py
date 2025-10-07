@@ -194,7 +194,6 @@ def main():
             """,
         allow_abbrev=False,
     )
-    output_group = parser.add_mutually_exclusive_group(required=True)
 
     parser.add_argument(
         "-s",
@@ -208,13 +207,13 @@ def main():
         help="path to the events configuration file",
         required=True,
     )
-    output_group.add_argument(
+    parser.add_argument(
         "--report-file",
         "--rf",
         help="path to the file to store report",
         default="execution.csv",
     )
-    output_group.add_argument(
+    parser.add_argument(
         "--rabbitmq-config-file",
         "--rcf",
         help="path to the TOML file with the RabbitMQ server configuration.",
