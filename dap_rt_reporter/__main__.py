@@ -6,7 +6,6 @@ import csv
 import logging
 import os
 import signal
-import sys
 
 from dap_rt_reporter.event.checkpoint_reached_event import (
     CheckpointReachedEvent,
@@ -195,6 +194,7 @@ def main():
             """,
         allow_abbrev=False,
     )
+    output_group = parser.add_mutually_exclusive_group(required=True)
 
     parser.add_argument(
         "-s",
@@ -208,11 +208,17 @@ def main():
         help="path to the events configuration file",
         required=True,
     )
-    parser.add_argument(
+    output_group.add_argument(
         "--report-file",
         "--rf",
         help="path to the file to store report",
         default="execution.csv",
+    )
+    output_group.add_argument(
+        "--rabbitmq-config-file",
+        "--rcf",
+        help="path to the TOML file with the RabbitMQ server configuration.",
+        default="",
     )
     parser.add_argument(
         "-f", "--force", help="force report file rewrite", action="store_true"
@@ -237,14 +243,6 @@ def main():
         required=False,
     )
 
-    # RabbitMQ configuration arguments
-    parser.add_argument(
-        "--rabbitmq-config-file",
-        "--rcf",
-        help="path to the TOML file with the RabbitMQ server configuration.",
-        default="",
-    )
-
     args = parser.parse_args()
 
     sut = args.sut
@@ -267,15 +265,15 @@ def main():
     # Logging level
     match args.log_level:
         case "info":
-            LOGGING_LEVEL = logging.INFO
+            logging_level = logging.INFO
         case "debug":
-            LOGGING_LEVEL = logging.DEBUG
+            logging_level = logging.DEBUG
         case "warning":
-            LOGGING_LEVEL = logging.WARNING
+            logging_level = logging.WARNING
         case "error":
-            LOGGING_LEVEL = logging.ERROR
+            logging_level = logging.ERROR
         case "critical":
-            LOGGING_LEVEL = logging.CRITICAL
+            logging_level = logging.CRITICAL
         case _:
             raise RuntimeError(
                 f"Level {args.log_level} is not a valid option."
@@ -284,7 +282,7 @@ def main():
     # Logger configuration
     logging.basicConfig(
         encoding="utf-8",
-        level=LOGGING_LEVEL,
+        level=logging_level,
         format="%(asctime)s : [%(name)s:%(levelname)s] - %(message)s",
     )
 
@@ -298,7 +296,7 @@ def main():
     else:
         handler = logging.FileHandler(args.log_file)
 
-    handler.setLevel(LOGGING_LEVEL)
+    handler.setLevel(logging_level)
     handler.setFormatter(formatter)
 
     logger.addHandler(handler)

@@ -1,10 +1,12 @@
 # Copyright (C) <2024>  INVAP S.E.
 # SPDX-License-Identifier: AGPL-3.0-or-later
 
-import dap
 import logging
-from dap_rt_reporter.connection.stdio_handler import STDIOHandler
+
+import dap
+
 from dap_rt_reporter.connection.connection_wrapper import ConnectionWrapper
+from dap_rt_reporter.connection.stdio_handler import STDIOHandler
 
 logger = logging.getLogger(__name__)
 
