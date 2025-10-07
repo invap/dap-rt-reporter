@@ -1,15 +1,27 @@
 # Copyright (C) <2024>  INVAP S.E.
 # SPDX-License-Identifier: AGPL-3.0-or-later
 
+import logging
+
 import dap
-from dap_rt_reporter.connection.stdio_handler import STDIOHandler
+
 from dap_rt_reporter.connection.connection_wrapper import ConnectionWrapper
+from dap_rt_reporter.connection.stdio_handler import STDIOHandler
+
+logger = logging.getLogger(__name__)
 
 
 class GDBConnection(ConnectionWrapper):
     """Wrapper for the connection between the DAP client and debugger."""
 
     def __init__(self, executable: str, executable_args: str) -> None:
+        """Initialize connection with GDB via DAP.
+
+        Args:
+            executable (str): Path to the executable file to debug.
+            executable_args (str): Arguments for the executable.
+        """
+
         super().__init__(executable, executable_args)
         self.alive = True
 
@@ -19,15 +31,25 @@ class GDBConnection(ConnectionWrapper):
         self.dap_client = dap.Client("DAP Client")
 
         self.response_buffer = b""
+        self.receive_message_count = 0
+        self.send_message_count = 0
 
-    def _send(self):
-        """Clears the DAP client buffer and writes the commands to the stdio pipe."""
+    def _send(self) -> None:
+        """Clears the DAP client buffer and writes the commands
+        to the stdio pipe.
+        """
 
         command = self.dap_client.send()
         self.stdio_handler.write(command)
+        self.send_message_count += 1
 
     def get_response(self) -> bytes:
-        """Gets next response from buffer or debugger. If not alive return empty response."""
+        """Gets next response from buffer or debugger. If not alive return
+        empty response.
+
+        Returns:
+            bytes: Complete DAP response as bytes.
+        """
 
         while self.alive:
             if b"\r\n\r\n{" in self.response_buffer:
@@ -37,6 +59,7 @@ class GDBConnection(ConnectionWrapper):
                 if length <= len(self.response_buffer):
                     response = self.response_buffer[:length]
                     self.response_buffer = self.response_buffer[length:]
+                    self.receive_message_count += 1
                     return response
 
             partial_response = self.stdio_handler.read()
@@ -100,3 +123,5 @@ class GDBConnection(ConnectionWrapper):
         """Kill debugger subprocess."""
 
         self.stdio_handler.close()
+        logger.info("Messages received: %s", self.receive_message_count)
+        logger.info("Messages sent: %s", self.send_message_count)

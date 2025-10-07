@@ -3,29 +3,15 @@
 
 import csv
 import logging
-import sys
 import time
-
-from pika import BasicProperties
-from rt_rabbitmq_wrapper.rabbitmq_utility import (
-    RabbitMQError,
-    connect_to_channel_exchange,
-    connect_to_server,
-    publish_message,
-)
 
 from dap_rt_reporter.connection.gdb_connection import GDBConnection
 from dap_rt_reporter.connection.lldb_connection import LLDBConnection
 from dap_rt_reporter.event.event import Event
 from dap_rt_reporter.listener import Listener
-from dap_rt_reporter.rabbitmq_connection.rabbitmq_server_configs import (
-    rabbitmq_event_exchange_config,
-    rabbitmq_server_config,
-)
-from dap_rt_reporter.rabbitmq_connection.rabbitmq_server_connections import (
-    rabbitmq_event_server_connection,
-)
 from dap_rt_reporter.types import DAPEvent, DAPMessage, DAPRequest
+
+logger = logging.getLogger(__name__)
 
 
 class Reporter:
@@ -45,7 +31,7 @@ class Reporter:
 
         Args:
             executable_path (str): Path to the SUT executable.
-            execution_trace_log_path (str): Path to the output  file
+            execution_trace_log_path (str): Path to the output  file.
             executable_args (str, optional): Arguments to pass to the SUT. Defaults to "".
             debugger_selection (str, optional): Select debugger to use during execution, accepted options are gdb and lldb. Defaults to "gdb".
             use_rabbitmq (bool, optional): Flag to set when using RabbitMQ server. Defaults to False.
@@ -84,9 +70,7 @@ class Reporter:
             bool: Indicates program termination.
         """
 
-        if self.use_rabbitmq:
-            self.connect_rabbitmq()
-
+        init_time = time.time()
         # Open csv file and start execution
         with open(
             self.execution_trace_log_path, "w", encoding="utf8"
@@ -103,7 +87,7 @@ class Reporter:
                     self._set_up()
 
             # Start execution after configuration done is received
-            logging.info("Starting SUT execution")
+            logger.info("Starting SUT execution")
             self.debugger_connection.configuration_done()
 
             terminated = False
@@ -112,7 +96,7 @@ class Reporter:
                 response = self.debugger_connection.get_response()
                 response = Event.parse_dap_response(response)
 
-                logging.debug(f"DAP Response: {response}")
+                logger.debug("DAP Response: %s", response)
                 # Logic to control program execution
                 if response["type"] == DAPMessage.EVENT:
                     if (
@@ -130,7 +114,8 @@ class Reporter:
                     elif response["event"] == DAPEvent.TERMINATED:
                         terminated = True
 
-        logging.info("Closing reporter")
+        logger.info("Closing reporter")
+        logger.info("Program execution time: %s", time.time() - init_time)
 
         return terminated
 
@@ -141,7 +126,7 @@ class Reporter:
             RuntimeError: _description_
         """
 
-        logging.info("Setting breakpoints")
+        logger.info("Setting breakpoints")
         # Create breakpoint locations
         breakpoint_locations: dict[str, dict[int, list[Event]]] = {}
         for event in self.events:
@@ -179,7 +164,7 @@ class Reporter:
             source_dap_form = {"name": source, "path": source_path}
 
             # Set breakpoints and clear previous ones
-            logging.debug(
+            logger.debug(
                 "Setting breakpoints for %s", source_dap_form["name"]
             )
             self.debugger_connection.set_breakpoints_source(
@@ -196,7 +181,7 @@ class Reporter:
                 response = self.debugger_connection.get_response()
                 response = Event.parse_dap_response(response)
 
-                logging.debug(
+                logger.debug(
                     "At breakpoint verification DAP response: %s", response
                 )
                 if (
@@ -210,37 +195,6 @@ class Reporter:
                             )
                     breakpoint_verification = True
 
-    def connect_rabbitmq(self) -> None:
-        """Set up connection to the RabbitMQ server and channel
-        """
-
-        # Connect to the RabbitMQ server
-        try:
-            rabbitmq_connection = connect_to_server(rabbitmq_server_config)
-        except RabbitMQError:
-            logging.critical(
-                "Error setting up the connection to the RabbitMQ server."
-            )
-            exit(-2)
-        # Set up events channel
-        try:
-            events_channel = connect_to_channel_exchange(
-                rabbitmq_server_config=rabbitmq_server_config,
-                rabbitmq_exchange_config=rabbitmq_event_exchange_config,
-                connection=rabbitmq_connection,
-            )
-        except RabbitMQError:
-            logging.critical(
-                "Error setting up the events channel and exchange."
-            )
-            exit(-2)
-
-        rabbitmq_event_server_connection.connection = rabbitmq_connection
-        rabbitmq_event_server_connection.channel = events_channel
-        rabbitmq_event_server_connection.exchange = (
-            rabbitmq_event_exchange_config.exchange
-        )
-
     def set_event(self, event: Event) -> None:
         """Set new event to report.
 
@@ -250,38 +204,20 @@ class Reporter:
 
         self.events.append(event)
 
-    def kill(self, segnum=0, frame="") -> None:
-        """Stops SUT execution but allow events set up to be completed.
-
-        Args:
-            segnum (int, optional): Segment number intented to be used with signal library. Defaults to 0.
-            frame (str, optional): Frame intented to be used with signal library. Defaults to "".
+    def kill(self) -> None:
+        """Deactivate debugger connection and stop SUT execution, set up
+        is allowed to finish.
         """
 
-        logging.debug("Killing reporter at : %s and segnum %d", frame, segnum)
         self.debugger_connection.set_alive(False)
 
     def close(self) -> None:
-        """Close reporter and send termination message to exchange if RabbitMQ flag was set.
+        """Close reporter and send termination message to exchange if RabbitMQ
+        flag was set.
         """
 
-        logging.info("Closing debugger connection.")
+        logger.info("Closing debugger connection.")
         self.debugger_connection.close()
 
         if self.use_rabbitmq:
-            try:
-                publish_message(
-                    rabbitmq_server_connection=rabbitmq_event_server_connection,
-                    routing_key="events",
-                    body=b"",
-                    properties=BasicProperties(
-                        delivery_mode=2, headers={"termination": True}
-                    ),
-                )
-            except RabbitMQError:
-                logging.critical(
-                    "Error while publishing the termination message."
-                )
-                sys.exit(-2)
-
-            rabbitmq_event_server_connection.connection.close()
+            self.listener.publish_termination()

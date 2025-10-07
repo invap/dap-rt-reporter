@@ -4,6 +4,7 @@
 from dap_rt_reporter.event.timed_event import TimedEvent
 from dap_rt_reporter.types import ReportEventSubType
 
+
 class ClockPauseEvent(TimedEvent):
     def __init__(self, source_path, line, before, name):
         super().__init__(source_path, line, before, name)

@@ -25,8 +25,12 @@ class STDIOHandler:
             self.debugger_subprocess.stdout is not None
             and self.debugger_subprocess.stderr is not None
         ):
-            fcntl.fcntl(self.debugger_subprocess.stdout, fcntl.F_SETFL, os.O_NONBLOCK)
-            fcntl.fcntl(self.debugger_subprocess.stderr, fcntl.F_SETFL, os.O_NONBLOCK)
+            fcntl.fcntl(
+                self.debugger_subprocess.stdout, fcntl.F_SETFL, os.O_NONBLOCK
+            )
+            fcntl.fcntl(
+                self.debugger_subprocess.stderr, fcntl.F_SETFL, os.O_NONBLOCK
+            )
         else:
             raise RuntimeError(
                 "Invalid state debugger subprocess stdout/stderr is None"

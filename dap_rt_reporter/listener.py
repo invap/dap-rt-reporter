@@ -1,18 +1,29 @@
 # Copyright (C) <2024>  INVAP S.E.
 # SPDX-License-Identifier: AGPL-3.0-or-later
 
+import json
 import logging
 import sys
 from typing import Literal
 
 from pika import BasicProperties
-from rt_rabbitmq_wrapper.rabbitmq_utility import publish_message, RabbitMQError
+from rt_rabbitmq_wrapper.exchange_types.event.event_codec_errors import (
+    EventCSVError,
+    EventTypeError,
+)
+from rt_rabbitmq_wrapper.exchange_types.event.event_csv_codec import (
+    EventCSVCoDec,
+)
+from rt_rabbitmq_wrapper.exchange_types.event.event_dict_codec import (
+    EventDictCoDec,
+)
+from rt_rabbitmq_wrapper.rabbitmq_utility import RabbitMQError
 
 from dap_rt_reporter.connection.connection_wrapper import ConnectionWrapper
 from dap_rt_reporter.event.event import Event
-from dap_rt_reporter.rabbitmq_connection.rabbitmq_server_connections import (
-    rabbitmq_event_server_connection,
-)
+from dap_rt_reporter.rabbitmq_connection import rabbitmq_server_connections
+
+logger = logging.getLogger(__name__)
 
 
 class Listener:
@@ -33,7 +44,7 @@ class Listener:
         """Handle breakpoint responses."""
 
         # Set before or after key
-        before_key: Literal['b'] | Literal['a'] = "b" if before else "a"
+        before_key: Literal["b"] | Literal["a"] = "b" if before else "a"
 
         # Get breakpoint and thread id from response
         breakpoint_id = response["body"]["hitBreakpointIds"][0]
@@ -42,13 +53,13 @@ class Listener:
         for event in self.events[breakpoint_id][before_key]:
             report = event.report(timestamp, debugger_connection, thread_id)
 
-            logging.debug("Reporting event: %s", report)
+            logger.debug("Reporting event: %s", report)
 
             # Write event
-            csv_writer.writerow(report)
-
             if self.use_rabbitmq:
                 self.publish_event(report)
+            else:
+                csv_writer.writerow(report)
 
     def add_event(self, breakpoint_id, event: Event) -> None:
         """Adds event to listen list, uses breakpoint id as identifier."""
@@ -75,24 +86,46 @@ class Listener:
     def publish_event(self, event: list):
         """Publish an event to a RabbitMQ server."""
 
-        # Convert event to string
-        event_string: str = ""
+        # Convert csv event
+        event_string = ",".join(map(str, event))
+        try:
+            event_u = EventCSVCoDec.from_csv(event_string)
+        except EventCSVError:
+            logger.info("Error when parsing event csv: %s", event_string)
+            sys.exit(-1)
+        
+        try:
+            event_dict = EventDictCoDec.to_dict(event_u)
+        except EventTypeError:
+            logger.info(
+                "Error building event dictionary from event: %s", event_u
+            )
+            sys.exit(-1)
 
-        for item in event[:-1]:
-            event_string += str(item)
-            event_string += ","
-        event_string += event[-1]
-
-        logging.debug("Publishing event: %s", event_string)
+        logger.debug("Publishing event: %s", event)
 
         # Publish event
         try:
-            publish_message(
-                rabbitmq_server_connection=rabbitmq_event_server_connection,
-                routing_key="events",
-                body=event_string,
+            rabbitmq_server_connections.rabbitmq_event_server_connection.publish_message(
+                body=json.dumps(event_dict),
                 properties=BasicProperties(delivery_mode=2),
             )
         except RabbitMQError:
-            logging.critical(f"Error while publishing event: {event_string}")
+            logger.critical("Error while publishing event: %s", event)
+            sys.exit(-2)
+
+    def publish_termination(self) -> None:
+        """Publish a blank message with the termination header, closes
+        connection with monitor.
+        """
+
+        try:
+            rabbitmq_server_connections.rabbitmq_event_server_connection.publish_message(
+                body="",
+                properties=BasicProperties(
+                    delivery_mode=2, headers={"termination": True}
+                ),
+            )
+        except RabbitMQError:
+            logger.critical("Error while publishing the termination message.")
             sys.exit(-2)
