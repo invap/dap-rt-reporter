@@ -24,7 +24,7 @@ class ConnectionWrapper(ABC):
         self.alive = state
 
     @abstractmethod
-    def get_response(self):
+    def get_response(self) -> bytes:
         pass
 
     @abstractmethod
@@ -40,7 +40,7 @@ class ConnectionWrapper(ABC):
         pass
 
     @abstractmethod
-    def set_breakpoints_source(self):
+    def set_breakpoints_source(self, source, breakpoints):
         pass
 
     @abstractmethod
@@ -52,11 +52,11 @@ class ConnectionWrapper(ABC):
         pass
 
     @abstractmethod
-    def evaluate(self):
+    def evaluate(self, expression, frame_id):
         pass
 
     @abstractmethod
-    def stack_trace(self):
+    def stack_trace(self, thread_id):
         pass
 
     @abstractmethod

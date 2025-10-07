@@ -1,0 +1,3 @@
+from rt_rabbitmq_wrapper.rabbitmq_utility import RabbitMQ_server_connection
+
+rabbitmq_event_server_connection = RabbitMQ_server_connection()
