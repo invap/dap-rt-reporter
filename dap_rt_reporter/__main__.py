@@ -21,10 +21,6 @@ from dap_rt_reporter.event.clock_reset import ClockResetEvent
 from dap_rt_reporter.event.clock_resume import ClockResumeEvent
 from dap_rt_reporter.event.component_event import ComponentEvent
 
-logging.basicConfig(
-    encoding="utf-8", level=logging.INFO, format="%(levelname)s::%(message)s"
-)
-
 # Parser arguments
 parser = argparse.ArgumentParser(
     prog="dap_reporter",
@@ -38,7 +34,7 @@ parser = argparse.ArgumentParser(
 
 parser.add_argument("--sut", help="binary of the program to report", required=True)
 parser.add_argument("--desc", help="configuration file", required=True)
-parser.add_argument("--log", help="log file to store report", required=True)
+parser.add_argument("--log", help="log file to store report", default="execution.csv")
 parser.add_argument("-f", help="force log rewrite", action="store_true")
 parser.add_argument("--sut-args", help="add argument for SUT", nargs="+")
 parser.add_argument(
@@ -47,6 +43,28 @@ parser.add_argument(
     help="debugger selection",
     choices=["gdb", "lldb"],
     default="gdb",
+)
+parser.add_argument(
+    "--log-level",
+    help="select logging level",
+    choices=["info", "debug", "warning", "error", "critical"],
+    default="info",
+)
+
+# RabbitMQ configuration arguments
+parser.add_argument(
+    "--use-rabbitmq",
+    help="use RabbitMQ to send the report based on the configuration",
+    action="store_true",
+)
+parser.add_argument("--host", help="RabbitMQ host option", default="localhost")
+parser.add_argument("--port", help="RabbitMQ port option", default="5672")
+parser.add_argument("--user", help="RabbitMQ user option", default="guest")
+parser.add_argument("--password", help="RabbitMQ password option", default="guest")
+parser.add_argument(
+    "--exchange",
+    help="RabbitMQ exchange used to send events",
+    default="my_event_exchange",
 )
 
 args = parser.parse_args()
@@ -57,6 +75,7 @@ log_path = args.log
 force = args.f
 sut_args = " ".join(args.sut_args) if args.sut_args else ""
 debugger_selection = args.debugger
+use_rabbitmq = args.use_rabbitmq
 
 # Checks
 if not os.path.isfile(sut):
@@ -66,7 +85,32 @@ if not os.path.isfile(config_file):
 if os.path.isfile(log_path) and not force:
     raise RuntimeError(f"Warning: {log_path} already exists, use -f to force rewrite.")
 
+# Logging level
+match args.log_level:
+    case "info":
+        logging_level = logging.INFO
+    case "debug":
+        logging_level = logging.DEBUG
+    case "warning":
+        logging_level = logging.WARNING
+    case "error":
+        logging_level = logging.ERROR
+    case "critical":
+        logging_level = logging.CRITICAL
+    case _:
+        raise RuntimeError(f"Level {args.log_level} is not a valid option.")
+
+logging.basicConfig(
+    encoding="utf-8", level=logging_level, format="%(levelname)s::%(message)s"
+)
+
 reporter = Reporter(sut, log_path, sut_args, debugger_selection)
+
+#
+if use_rabbitmq:
+    reporter.connect_rabbitmq(
+        args.host, args.port, args.user, args.password, args.exchange
+    )
 
 logging.info("Reading configuration file")
 # Read each line and add corresponding events

@@ -1,22 +1,45 @@
 # Copyright (C) <2024>  INVAP S.E.
 # SPDX-License-Identifier: AGPL-3.0-or-later
 
+import logging
+
 from dap_rt_reporter.event.event import Event
 from dap_rt_reporter.connection.connection_wrapper import ConnectionWrapper
+from csv import writer
+
 
 class Listener:
     def __init__(self) -> None:
+
+        # Events dictionary
         self.events = {}
 
-    def handle_response(self, timestamp: int, response: dict, csv_writer, debugger_connection: ConnectionWrapper, before: bool):
-        """Listens to responses from debugger and gives instructions to reporter."""
-        
+        # RabbitMQ connection
+        self.rabbitmq_connection = None
+
+    def handle_response(
+        self,
+        timestamp: int,
+        response: dict,
+        csv_writer: writer,
+        debugger_connection: ConnectionWrapper,
+        before: bool,
+    ):
+        """Handle breakpoint responses."""
+
         before = "b" if before else "a"
-        
+
         breakpoint_id = response["body"]["hitBreakpointIds"][0]
         thread_id = response["body"]["threadId"]
         for event in self.events[breakpoint_id][before]:
-            event.report(timestamp, csv_writer, debugger_connection, thread_id)
+            report = event.report(timestamp, debugger_connection, thread_id)
+
+            logging.debug("Reporting event: %s", report)
+
+            csv_writer.writerow(report)
+
+            if self.rabbitmq_connection:
+                self.rabbitmq_connection.publish_event(report)
 
     def add_event(self, breakpoint_id, event: Event):
         """Adds event to listen list, uses breakpoint id as identifier."""
@@ -34,3 +57,10 @@ class Listener:
             else:
                 self.events[breakpoint_id]["b"] = []
                 self.events[breakpoint_id]["a"] = [event]
+
+    def set_rabbitmq_connection(self, rabbitmq_connection):
+        self.rabbitmq_connection = rabbitmq_connection
+
+    def close(self):
+        if self.rabbitmq_connection:
+            self.rabbitmq_connection.disconnect()

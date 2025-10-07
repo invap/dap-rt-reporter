@@ -10,6 +10,7 @@ from dap_rt_reporter.connection.gdb_connection import GDBConnection
 from dap_rt_reporter.types import DAPEvent, DAPMessage
 from dap_rt_reporter.listener import Listener
 from dap_rt_reporter.event.event import Event
+from dap_rt_reporter.rabbitmq_connection import RabbitMQConnection
 
 
 class Reporter:
@@ -24,16 +25,21 @@ class Reporter:
         executable_args: str = "",
         debugger_selection: str = "gdb",
     ) -> None:
-        
+        # Use debugger connection gdb/lldb
         self.debugger_selection = debugger_selection
         match self.debugger_selection:
             case "gdb":
-                self.debugger_connection = GDBConnection(executable_path, executable_args)
+                self.debugger_connection = GDBConnection(
+                    executable_path, executable_args
+                )
             case "lldb":
-                self.debugger_connection = LLDBConnection(executable_path, executable_args)
+                self.debugger_connection = LLDBConnection(
+                    executable_path, executable_args
+                )
             case _:
                 raise RuntimeError("Invalid debugger option.")
 
+        # Create listener
         self.listener = Listener()
 
         self.execution_trace_log_path = execution_trace_log_path
@@ -65,6 +71,7 @@ class Reporter:
                 response = self.debugger_connection.get_response()
                 response = Event.parse_dap_response(response)
 
+                logging.debug(f"DAP Response: {response}")
                 # Logic to control program execution
                 if response["type"] == DAPMessage.EVENT:
                     if (
@@ -151,17 +158,23 @@ class Reporter:
                             )
                     breakpoint_verification = True
 
-    def kill(self, segnum=0, frame=""):
-        """Kill reporter. Stops SUT execution but allow events set up to be completed."""
+    def connect_rabbitmq(self, host, port, user, password, exchange):
+        rabbitmq_connection = RabbitMQConnection(host, port, user, password, exchange)
 
-        logging.debug("Killing reporter at : %s and segnum %d", frame, segnum)
-        self.debugger_connection.set_alive(False)
+        self.listener.set_rabbitmq_connection(rabbitmq_connection)
 
     def set_event(self, event: Event):
         """Set new event to report."""
 
         self.events.append(event)
 
+    def kill(self, segnum=0, frame=""):
+        """Kill reporter. Stops SUT execution but allow events set up to be completed."""
+
+        logging.debug("Killing reporter at : %s and segnum %d", frame, segnum)
+        self.debugger_connection.set_alive(False)
+
     def close(self):
         logging.info("Closing debugger connection.")
         self.debugger_connection.close()
+        self.listener.close()

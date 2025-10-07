@@ -13,16 +13,14 @@ class ComponentEvent(Event):
         self.function_name = function_name
         self.function_params = function_params
 
-    def report(self, timestamp, csv_writer, debugger_connection, thread_id):
-        csv_writer.writerow(
-            [
-                timestamp,
-                self.type,
-                self._get_event_name(thread_id, debugger_connection),
-                self.function_name,
-                *[
-                    self.evaluate_expression(param, thread_id, debugger_connection)
-                    for param in self.function_params
-                ],
-            ]
-        )
+    def report(self, timestamp, debugger_connection, thread_id):
+        return [
+            timestamp,
+            self.type,
+            self._get_event_name(thread_id, debugger_connection),
+            self.function_name,
+            *[
+                self.evaluate_expression(param, thread_id, debugger_connection)
+                for param in self.function_params
+            ],
+        ]
