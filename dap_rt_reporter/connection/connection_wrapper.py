@@ -5,7 +5,7 @@ from abc import ABC, abstractmethod
 
 
 class ConnectionWrapper(ABC):
-    """Abstract class for connections. The reporter can interact with any
+    """Abstract class for debugger connections. The reporter can interact with any
     connection that follows this class.
     """
 
