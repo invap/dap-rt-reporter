@@ -23,13 +23,16 @@ class STDIOHandler:
         """
         self.launch_command = launch_command
 
-        self.debugger_subprocess = subprocess.Popen(
-            self.launch_command,
-            shell=False,
-            stdout=subprocess.PIPE,
-            stdin=subprocess.PIPE,
-            stderr=subprocess.PIPE,
-        )
+        try:
+            self.debugger_subprocess = subprocess.Popen(
+                self.launch_command,
+                shell=False,
+                stdout=subprocess.PIPE,
+                stdin=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+            )
+        except FileNotFoundError as e:
+            raise SpawnError("Incorrect debugger command") from e
 
         # Make pipes non blocking
         if (
