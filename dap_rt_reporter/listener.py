@@ -40,7 +40,7 @@ class Listener:
         csv_writer,
         debugger_connection: ConnectionWrapper,
         before: bool,
-    ):
+    ) -> str:
         """Handle breakpoint responses."""
 
         # Set before or after key
@@ -60,6 +60,12 @@ class Listener:
                 self.publish_event(report)
             else:
                 csv_writer.writerow(report)
+
+        return breakpoint_id
+
+    def is_after(self, id: str) -> int:
+        return len(self.events[id]["a"])
+
 
     def add_event(self, breakpoint_id, event: Event) -> None:
         """Adds event to listen list, uses breakpoint id as identifier."""

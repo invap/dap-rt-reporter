@@ -4,6 +4,7 @@
 import csv
 import logging
 import time
+from enum import Enum
 
 from dap_rt_reporter.connection.gdb_connection import GDBConnection
 from dap_rt_reporter.connection.lldb_connection import LLDBConnection
@@ -12,6 +13,18 @@ from dap_rt_reporter.listener import Listener
 from dap_rt_reporter.types import DAPEvent, DAPMessage, DAPRequest
 
 logger = logging.getLogger(__name__)
+
+
+class ReporterState(Enum):
+    """Reporter execution states"""
+
+    IDLE = 1
+    BEFORE = 2
+    CONTINUE = 3
+    NEXT = 4
+    AFTER = 5
+    EXIT = 6
+    CHECK_AFTER = 7
 
 
 class Reporter:
@@ -54,6 +67,8 @@ class Reporter:
             case _:
                 raise RuntimeError("Invalid debugger option.")
 
+        self.state = ReporterState.IDLE
+
         # Create listener
         self.listener = Listener(use_rabbitmq)
 
@@ -91,33 +106,97 @@ class Reporter:
             self.debugger_connection.configuration_done()
 
             terminated = False
-            while not terminated and self.debugger_connection.get_alive():
-                # Get response from debugger
-                response = self.debugger_connection.get_response()
-                response = Event.parse_dap_response(response)
+            self.state = ReporterState.IDLE
 
-                logger.debug("DAP Response: %s", response)
-                # Logic to control program execution
-                if response["type"] == DAPMessage.EVENT:
-                    if (
-                        response["event"] == DAPEvent.STOPPED
-                        and response["body"]["reason"] == "breakpoint"
-                    ):
-                        self.listener.handle_response(
-                            int(1e6 * time.time()),
-                            response,
-                            csv_writer,
-                            self.debugger_connection,
-                            True,
-                        )
-                        self.debugger_connection.continue_execution()
-                    elif response["event"] == DAPEvent.TERMINATED:
-                        terminated = True
+            # Logic to control program execution
+            terminated = self.handle_breakpoints(csv_writer)
 
         logger.info("Closing reporter")
         logger.info("Program execution time: %s", time.time() - init_time)
 
         return terminated
+
+    def handle_breakpoints(self, csv_writer) -> bool:
+        prev_response = ""
+        breakpoint_id = -1
+
+        while self.debugger_connection.get_alive():
+            match self.state:
+                case ReporterState.IDLE:
+                    response = self.debugger_connection.get_response()
+                    response = Event.parse_dap_response(response)
+
+                    if response["type"] == DAPMessage.EVENT:
+                        if (
+                            response["event"] == DAPEvent.STOPPED
+                            and response["body"]["reason"] == "breakpoint"
+                        ):
+                            self.state = ReporterState.BEFORE
+                        elif response["event"] == DAPEvent.TERMINATED:
+                            self.state = ReporterState.EXIT
+
+                case ReporterState.BEFORE:
+                    breakpoint_id = self.listener.handle_response(
+                        int(1e6 * time.time()),
+                        response,
+                        csv_writer,
+                        self.debugger_connection,
+                        True,
+                    )
+
+                    print("OK-b")
+
+                    if self.listener.is_after(breakpoint_id):
+                        prev_response = response
+                        self.state = ReporterState.NEXT
+                    else:
+                        self.state = ReporterState.CONTINUE
+
+                case ReporterState.CONTINUE:
+                    self.debugger_connection.continue_execution()
+                    self.state = ReporterState.IDLE
+
+                case ReporterState.NEXT:
+                    self.debugger_connection.next()
+                    self.state = ReporterState.AFTER
+
+                case ReporterState.AFTER:
+                    response = self.debugger_connection.get_response()
+                    response = Event.parse_dap_response(response)
+
+                    if response["type"] == DAPMessage.EVENT:
+                        if response["event"] == DAPEvent.STOPPED:
+                            print("OK")
+                            print(response["body"]["reason"] )
+
+                            self.listener.handle_response(
+                                int(1e6 * time.time()),
+                                prev_response,
+                                csv_writer,
+                                self.debugger_connection,
+                                False,
+                            )
+
+                            if response["body"]["reason"] == "breakpoint":
+                                self.listener.handle_response(
+                                    int(1e6 * time.time()),
+                                    response,
+                                    csv_writer,
+                                    self.debugger_connection,
+                                    True,
+                                )
+                                prev_response = response
+
+                                self.state = ReporterState.BEFORE
+                            elif response["body"]["reason"] == "step":
+                                self.state = ReporterState.CONTINUE
+                        elif response["event"] == DAPEvent.TERMINATED:
+                            self.state = ReporterState.EXIT
+
+                case ReporterState.EXIT:
+                    return (True, prev_response)
+
+        return False
 
     def _set_up(self) -> None:
         """Sets breakpoints and gives the events to listener.
@@ -164,9 +243,7 @@ class Reporter:
             source_dap_form = {"name": source, "path": source_path}
 
             # Set breakpoints and clear previous ones
-            logger.debug(
-                "Setting breakpoints for %s", source_dap_form["name"]
-            )
+            logger.debug("Setting breakpoints for %s", source_dap_form["name"])
             self.debugger_connection.set_breakpoints_source(
                 source_dap_form, lines_dap_form
             )
