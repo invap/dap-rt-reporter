@@ -10,6 +10,16 @@ from dap_rt_reporter.connection.lldb_connection import LLDBConnection
 from dap_rt_reporter.event.event import Event
 from dap_rt_reporter.listener import Listener
 from dap_rt_reporter.types import DAPEvent, DAPMessage, DAPRequest
+from dap_rt_reporter.errors import (
+    ReporterInitError,
+    ExecutionError,
+    SetupError,
+)
+from dap_rt_reporter.connection.errors import (
+    SpawnError,
+    DAPRequestError,
+    DAPResponseError,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -44,15 +54,26 @@ class Reporter:
         self.debugger_selection = debugger_selection
         match self.debugger_selection:
             case "gdb":
-                self.debugger_connection = GDBConnection(
-                    executable_path, executable_args
-                )
+                self.debugger_connection = GDBConnection
             case "lldb":
-                self.debugger_connection = LLDBConnection(
-                    executable_path, executable_args
-                )
+                self.debugger_connection = LLDBConnection
             case _:
-                raise RuntimeError("Invalid debugger option.")
+                raise ReporterInitError(
+                    "Invalid debugger option, valid options are gdb and lldb"
+                )
+
+        try:
+            self.debugger_connection = self.debugger_connection(
+                executable_path, executable_args
+            )
+        except SpawnError as e:
+            logger.error(
+                "DAP Reporter could not initialize debugger %s",
+                self.debugger_selection,
+            )
+            raise ReporterInitError(
+                f"Debugger {self.debugger_selection} could not be initialized"
+            ) from e
 
         # Create listener
         self.listener = Listener(use_rabbitmq)
@@ -66,8 +87,11 @@ class Reporter:
     def execute(self) -> bool:
         """Begins program execution and reporting.
 
+        Raises:
+            ExecutionError: Error occurs during execution
+
         Returns:
-            bool: Indicates program termination.
+            bool: Indicates program ending
         """
 
         init_time = time.time()
@@ -77,42 +101,67 @@ class Reporter:
         ) as report_file:
             csv_writer = csv.writer(report_file, delimiter=",")
 
-            self.debugger_connection.initialize()
-            match self.debugger_selection:
-                case "gdb":
-                    self._set_up()
-                    self.debugger_connection.launch()
-                case "lldb":
-                    self.debugger_connection.launch()
-                    self._set_up()
+            try:
+                self.debugger_connection.initialize()
+            except DAPRequestError as e:
+                logger.error("Initialize request could not be sent.")
+                raise ExecutionError("Initialize request error") from e
+
+            try:
+                self.debugger_connection.launch()
+                self._set_up()
+            except DAPRequestError as e:
+                logger.error("Launch request could not be sent.")
+                raise ExecutionError("Launch request error") from e
+            except SetupError as e:
+                raise ExecutionError(
+                    "Breakpoints set up was not completed successfully"
+                ) from e
 
             # Start execution after configuration done is received
             logger.info("Starting SUT execution")
-            self.debugger_connection.configuration_done()
+
+            try:
+                self.debugger_connection.configuration_done()
+            except DAPRequestError as e:
+                logger.error("Configuration done request could not be sent.")
+                raise ExecutionError("Configuration done request error") from e
 
             terminated = False
             while not terminated and self.debugger_connection.get_alive():
                 # Get response from debugger
-                response = self.debugger_connection.get_response()
-                response = Event.parse_dap_response(response)
+
+                try:
+                    response = self.debugger_connection.get_response()
+                    response = Event.parse_dap_response(response)
+                except DAPResponseError as e:
+                    logger.error("Could not read DAP response")
+                    raise ExecutionError(
+                        "DAP response was not received correctly"
+                    ) from e
 
                 logger.debug("DAP Response: %s", response)
                 # Logic to control program execution
-                if response["type"] == DAPMessage.EVENT:
-                    if (
-                        response["event"] == DAPEvent.STOPPED
-                        and response["body"]["reason"] == "breakpoint"
-                    ):
-                        self.listener.handle_response(
-                            int(1e6 * time.time()),
-                            response,
-                            csv_writer,
-                            self.debugger_connection,
-                            True,
-                        )
-                        self.debugger_connection.continue_execution()
-                    elif response["event"] == DAPEvent.TERMINATED:
-                        terminated = True
+                try:
+                    if response["type"] == DAPMessage.EVENT:
+                        if (
+                            response["event"] == DAPEvent.STOPPED
+                            and response["body"]["reason"] == "breakpoint"
+                        ):
+                            self.listener.handle_response(
+                                int(1e6 * time.time()),
+                                response,
+                                csv_writer,
+                                self.debugger_connection,
+                                True,
+                            )
+                            self.debugger_connection.continue_execution()
+                        elif response["event"] == DAPEvent.TERMINATED:
+                            terminated = True
+                except KeyError as e:
+                    raise ExecutionError(
+                        "Invalid DAP response was received, incorrect format"
+                    ) from e
 
         logger.info("Closing reporter")
         logger.info("Program execution time: %s", time.time() - init_time)
@@ -130,7 +179,7 @@ class Reporter:
         # Create breakpoint locations
         breakpoint_locations: dict[str, dict[int, list[Event]]] = {}
         for event in self.events:
-            # Save breakpoint-event relationships
+            # Save breakpoint/event relationships
             line = event.line
             source_path = event.source_path
             if source_path in breakpoint_locations:
@@ -164,9 +213,7 @@ class Reporter:
             source_dap_form = {"name": source, "path": source_path}
 
             # Set breakpoints and clear previous ones
-            logger.debug(
-                "Setting breakpoints for %s", source_dap_form["name"]
-            )
+            logger.debug("Setting breakpoints for %s", source_dap_form["name"])
             self.debugger_connection.set_breakpoints_source(
                 source_dap_form, lines_dap_form
             )
@@ -178,11 +225,17 @@ class Reporter:
                 not breakpoint_verification
                 and self.debugger_connection.get_alive()
             ):
-                response = self.debugger_connection.get_response()
-                response = Event.parse_dap_response(response)
+                try:
+                    response = self.debugger_connection.get_response()
+                    response = Event.parse_dap_response(response)
+                except DAPResponseError as e:
+                    logger.error("Could not read DAP response")
+                    raise SetupError(
+                        "DAP response was not received correctly"
+                    ) from e
 
                 logger.debug(
-                    "At breakpoint verification DAP response: %s", response
+                    "Breakpoint verification DAP response: %s", response
                 )
                 if (
                     response["type"] == DAPMessage.RESPONSE
@@ -190,7 +243,16 @@ class Reporter:
                 ):
                     for breakpoint in response["body"]["breakpoints"]:
                         if not breakpoint["verified"]:
-                            raise RuntimeError(
+                            logger.error(
+                                "Breakpoint verification for source %s, line %s failed",
+                                breakpoint_id_table[str(breakpoint["id"])][
+                                    "source_path"
+                                ],
+                                breakpoint_id_table[str(breakpoint["id"])][
+                                    "line"
+                                ],
+                            )
+                            raise SetupError(
                                 f"Breakpoint verification failed: \nSource: {breakpoint_id_table[str(breakpoint['id'])]['source_path']} \nLine: {breakpoint_id_table[str(breakpoint['id'])]['line']}"
                             )
                     breakpoint_verification = True
