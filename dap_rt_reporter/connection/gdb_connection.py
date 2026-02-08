@@ -91,7 +91,9 @@ class GDBConnection(ConnectionWrapper):
             try:
                 partial_response = self.stdio_handler.read()
             except ReadError as e:
-                raise DAPResponseError("Could not get response from debugger") from e
+                raise DAPResponseError(
+                    "Could not get response from debugger"
+                ) from e
 
             if partial_response:
                 self.response_buffer += partial_response
@@ -105,7 +107,9 @@ class GDBConnection(ConnectionWrapper):
             # Client already loads the request so only send is needed
             self._send()
         except ReadError as e:
-            raise DAPRequestError("Initialize request could not be sent") from e
+            raise DAPRequestError(
+                "Initialize request could not be sent"
+            ) from e
 
     def launch(self):
         """Sends launch request to debugger."""
@@ -127,7 +131,9 @@ class GDBConnection(ConnectionWrapper):
         try:
             self._send()
         except ReadError as e:
-            raise DAPRequestError("Configuration Done request could not be sent") from e
+            raise DAPRequestError(
+                "Configuration Done request could not be sent"
+            ) from e
 
     def set_breakpoints_source(self, source, breakpoints):
         """Send set source breakpoints request,
@@ -156,19 +162,19 @@ class GDBConnection(ConnectionWrapper):
         """Send next command for thread id 0."""
 
         self.dap_client.next(thread_id=0)
-        
+
         try:
             self._send()
         except ReadError as e:
             raise DAPRequestError("Next request could not be sent") from e
 
-    def evaluate(self, expression, frame_id):
+    def evaluate(self, expression: str, frame_id: int):
         """Sends evaluate command with given expression in current frame."""
 
         self.dap_client.evaluate(expression=expression, frame_id=0)
         self._send()
 
-    def stack_trace(self, thread_id):
+    def stack_trace(self, thread_id: int):
         """Send stack trace request"""
 
         self.dap_client.stack_trace(thread_id=thread_id)

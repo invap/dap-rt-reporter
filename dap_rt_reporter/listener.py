@@ -93,7 +93,7 @@ class Listener:
         except EventCSVError:
             logger.info("Error when parsing event csv: %s", event_string)
             sys.exit(-1)
-        
+
         try:
             event_dict = EventDictCoDec.to_dict(event_u)
         except EventTypeError:

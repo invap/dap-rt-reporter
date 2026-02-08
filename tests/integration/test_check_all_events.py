@@ -23,18 +23,14 @@ class TestCheckAllEvents(unittest.TestCase):
         # Run dap-rt-reporter
         subprocess.run(
             [
-                "pipx",
-                "run",
-                "poetry",
-                "run",
                 "python",
                 "-m",
                 "dap_rt_reporter",
                 "--sut",
                 executable_path,
-                "--desc",
+                "--cf",
                 conf_file,
-                "--log",
+                "--log-file",
                 execution_log,
                 "-f",
             ]

@@ -9,7 +9,7 @@ class ConnectionWrapper(ABC):
     connection that follows this class.
     """
 
-    def __init__(self, executable, executable_args):
+    def __init__(self, executable: str, executable_args: str):
         super().__init__()
 
         self.executable = executable
@@ -17,10 +17,22 @@ class ConnectionWrapper(ABC):
 
         self.alive = True
 
-    def get_alive(self):
+    def get_alive(self) -> bool:
+        """Get if the connection is alive.
+
+        Returns:
+            bool: If connection is alive.
+        """
+
         return self.alive
 
     def set_alive(self, state: bool):
+        """Set if the connection is alive.
+
+        Args:
+            state (bool): If the connection is alive.
+        """
+
         self.alive = state
 
     @abstractmethod

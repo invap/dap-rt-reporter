@@ -9,8 +9,7 @@ from dap_rt_reporter.connection.errors import ReadError, SpawnError, WriteError
 
 
 class STDIOHandler:
-    """Handles the connection to the debugger using STDIO.
-    """
+    """Handles the connection to the debugger using STDIO."""
 
     def __init__(self, launch_command: list[str]):
         """Spawn debugger and setup pipes for reading writing.
@@ -75,14 +74,16 @@ class STDIOHandler:
             bytes: Debugger output
         """
         if not self.debugger_subprocess.stdout:
-            raise ReadError("Invalid debugger state subprocess stdout pipe is None")
+            raise ReadError(
+                "Invalid debugger state subprocess stdout pipe is None"
+            )
 
         self.debugger_subprocess.stdout.flush()
         return self.debugger_subprocess.stdout.read()
 
     def close(self):
         """Attempt to close the debugger politely, if timeout is reached the
-        process is killed.
+        process is killed forcefully.
         """
         if self.debugger_subprocess.stdout is not None:
             self.debugger_subprocess.stdout.close()

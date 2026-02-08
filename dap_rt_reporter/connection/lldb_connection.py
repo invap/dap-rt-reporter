@@ -98,16 +98,18 @@ class LLDBConnection(ConnectionWrapper):
         self.dap_client.next(thread_id=0)
         self._send()
 
-    def evaluate(self, expression, frame_id):
+    def evaluate(self, expression: str, frame_id: int):
         """Sends evaluate command with given expression in current frame."""
 
         self.dap_client.evaluate(expression=expression, frame_id=frame_id)
         self._send()
 
-    def stack_trace(self, thread_id):
+    def stack_trace(self, thread_id: int):
         """Send stack trace request"""
 
-        self.dap_client.stack_trace(thread_id=thread_id, start_frame=0, levels=1)
+        self.dap_client.stack_trace(
+            thread_id=thread_id, start_frame=0, levels=1
+        )
         self._send()
 
     def close(self):

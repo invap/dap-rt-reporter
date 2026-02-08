@@ -22,8 +22,8 @@ class VariableValueAssignedEvent(StateEvent):
         """Initialize new variable value assigned event.
 
         Args:
-            source_path (str): Source asociated with the event.
-            line (int): Line asociated with the event.
+            source_path (str): Source associated with the event.
+            line (int): Line associated with the event.
             before (bool): Select if event should report before a line is executed.
             name (str): Name of the event.
             expression (str): Expression to evaluate when event is reported.

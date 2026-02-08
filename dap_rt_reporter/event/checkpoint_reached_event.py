@@ -14,8 +14,8 @@ class CheckpointReachedEvent(ProcessEvent):
         """Initialize new checkpoint reached event.
 
         Args:
-            source_path (str): Source path asociated with the event.
-            line (int): Line asociated with the event.
+            source_path (str): Source path associated with the event.
+            line (int): Line associated with the event.
             before (bool): Select if event should report before a line is executed.
             name (str): Name for the event.
         """

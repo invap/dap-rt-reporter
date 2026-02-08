@@ -45,6 +45,7 @@ def dap_rt_reporter_runner(
         use_rabbitmq (bool): Flag to turn the use of RabbitMQ to send the event trace.
         config_file (str): Event configuration file.
     """
+
     # Set SIGINT handler to handle closing during execution
     def sigint_handler(signum, frame):
         logger.debug("Received SIGINT signal: %s and segnum %d", frame, signum)

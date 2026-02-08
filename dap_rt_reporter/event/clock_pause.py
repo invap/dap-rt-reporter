@@ -6,6 +6,19 @@ from dap_rt_reporter.types import ReportEventSubType
 
 
 class ClockPauseEvent(TimedEvent):
-    def __init__(self, source_path, line, before, name):
+    """Clock Pause Event"""
+
+    def __init__(
+        self, source_path: str, line: int, before: bool, name: str
+    ) -> None:
+        """Initialize new clock pause event.
+
+        Args:
+            source_path (str): Source path associated with the event.
+            line (int): Line associated with the event.
+            before (bool): Select if event should report before a line is executed.
+            name (str): Name for the event.
+        """
+
         super().__init__(source_path, line, before, name)
         self._set_sub_type(ReportEventSubType.CLOCK_PAUSE)
