@@ -144,8 +144,6 @@ class Reporter:
                         True,
                     )
 
-                    print("OK-b")
-
                     if self.listener.is_after(breakpoint_id):
                         prev_response = response
                         self.state = ReporterState.NEXT
@@ -166,8 +164,6 @@ class Reporter:
 
                     if response["type"] == DAPMessage.EVENT:
                         if response["event"] == DAPEvent.STOPPED:
-                            print("OK")
-                            print(response["body"]["reason"] )
 
                             self.listener.handle_response(
                                 int(1e6 * time.time()),
@@ -178,13 +174,6 @@ class Reporter:
                             )
 
                             if response["body"]["reason"] == "breakpoint":
-                                self.listener.handle_response(
-                                    int(1e6 * time.time()),
-                                    response,
-                                    csv_writer,
-                                    self.debugger_connection,
-                                    True,
-                                )
                                 prev_response = response
 
                                 self.state = ReporterState.BEFORE
