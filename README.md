@@ -30,14 +30,14 @@ Python library to configure, execute the SUT and then report the execution trace
 
     ``` sh
     poetry env activate
-    poetry run python -m unittest discover -s tests/integration
+    python -m unittest discover -s tests/integration
     ```
 
     To execute the program:
 
     ``` sh
     poetry env activate
-    poetry run python -m dap_rt_reporter\
+    python -m dap_rt_reporter\
       --sut tests/integration/resources/simple_test/target/debug/simple_test \
       --configuration-file tests/integration/resources/simple_test_config.csv \
       --report-file execute.log
