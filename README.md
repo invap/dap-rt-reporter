@@ -49,19 +49,25 @@ The project can be used as a library which you can use to add events
 programmatically, as shown below.
 
 ```python
-from dap_rt_reporter.reporter import Reporter
-from dap_rt_reporter.event.checkpoint_reached_event import CheckpointReachedEvent
+from dap_rt_reporter.event.checkpoint_reached_event import (
+    CheckpointReachedEvent,
+)
 from dap_rt_reporter.event.variable_value_assigned_event import (
     VariableValueAssignedEvent,
 )
 
+from dap_rt_reporter.rt_reporter import RTReporterBuilder
+
 # Binary, log paths and source
-sut_path = "tests/integration/resources/simple_test/target/debug/simple_test"
-execution_log = "execute.log"
+sut = "tests/integration/resources/simple_test/target/debug/simple_test"
+output_file = "execute.log"
 source_path = "tests/integration/resources/simple_test/src/main.rs"
 # Initialize reporter
-reporter = Reporter(
-    executable_path=sut_path, execution_trace_log_path=execution_log
+reporter = (
+    RTReporterBuilder()
+    .with_gdb(sut, source_path)
+    .with_file_writer(output_file)
+    .build()
 )
 
 # Set checkpoint event on line 12
@@ -89,6 +95,10 @@ reporter.set_event(
 terminated = reporter.execute()
 reporter.close()
 ```
+
+To use the library you can use the RTReporterBuilder that already includes a list of 
+implemented debuggers and writers or implement your own and use the Reporter class on 
+its own.
 
 It can also be used as a program instead, to run use the following command.
 

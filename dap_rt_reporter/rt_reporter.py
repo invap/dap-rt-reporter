@@ -1,3 +1,5 @@
+from typing import Self
+
 from dap_rt_reporter.connection.gdb_connection import GDBConnection
 from dap_rt_reporter.connection.lldb_connection import LLDBConnection
 from dap_rt_reporter.errors import (
@@ -21,29 +23,33 @@ class RTReporterBuilder:
 
         return Reporter(self.event_writer, self.debugger_connection)
 
-    def with_gdb(self, sut: str, args: str) -> None:
+    def with_gdb(self, sut: str, args: str) -> Self:
         if self.debugger_connection is not None:
             raise MultipleDebuggerConnectionError
 
         self.debugger_connection = GDBConnection(sut, args)
+        return self
 
-    def with_lldb(self, sut: str, args: str) -> None:
+    def with_lldb(self, sut: str, args: str) -> Self:
         if self.debugger_connection is not None:
             raise MultipleDebuggerConnectionError
 
         self.debugger_connection = LLDBConnection(sut, args)
+        return self
 
     def with_file_writer(
         self,
         output_file: str,
-    ) -> None:
+    ) -> Self:
         if self.event_writer is not None:
             raise MultipleEventWriterError
 
         self.event_writer = FileWriter(output_file)
+        return self
 
-    def with_rabbitmq_writer(self) -> None:
+    def with_rabbitmq_writer(self) -> Self:
         if self.event_writer is not None:
             raise MultipleEventWriterError
 
         self.event_writer = RabbitMQWriter()
+        return self
