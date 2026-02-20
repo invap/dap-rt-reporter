@@ -8,11 +8,12 @@
 import csv
 import subprocess
 import unittest
-
-from dap_rt_reporter.types import ReportEventSubType, ReportEventType
+import os
 
 
 class TestCheckAllEvents(unittest.TestCase):
+    """Run an integration test that uses all types of events"""
+
     def test_events(self):
         executable_path = (
             "tests/integration/resources/simple_test/target/debug/simple_test"
@@ -30,108 +31,46 @@ class TestCheckAllEvents(unittest.TestCase):
                 executable_path,
                 "--cf",
                 conf_file,
-                "--log-file",
+                "--rf",
                 execution_log,
                 "-f",
             ]
         )
 
-        # Build expected log
-        events = []
-
-        x = 1
-        y = 1
-        events.append(
-            [
-                ReportEventType.STATE_EVENT,
-                ReportEventSubType.VARIABLE_VALUE_ASSIGNED,
-                "var_x",
-                str(x),
-            ]
-        )
-        events.append(
-            [
-                ReportEventType.STATE_EVENT,
-                ReportEventSubType.VARIABLE_VALUE_ASSIGNED,
-                "var_y",
-                str(y),
-            ]
-        )
-        events.append(
-            [ReportEventType.TIMED_EVENT, ReportEventSubType.CLOCK_START, "sleep_clk"]
-        )
-        events.append(
-            [ReportEventType.TIMED_EVENT, ReportEventSubType.CLOCK_PAUSE, "sleep_clk"]
-        )
-        for i in range(10):
-            events.append(
-                [
-                    ReportEventType.STATE_EVENT,
-                    ReportEventSubType.VARIABLE_VALUE_ASSIGNED,
-                    "var_i",
-                    str(i),
-                ]
-            )
-            events.append(
-                [ReportEventType.PROCESS_EVENT, ReportEventSubType.TASK_STARTED, "loop"]
-            )
-            x *= 2
-            y *= 3
-            events.append(
-                [
-                    ReportEventType.STATE_EVENT,
-                    ReportEventSubType.VARIABLE_VALUE_ASSIGNED,
-                    "var_x",
-                    str(x),
-                ]
-            )
-            events.append(
-                [
-                    ReportEventType.STATE_EVENT,
-                    ReportEventSubType.VARIABLE_VALUE_ASSIGNED,
-                    "var_y",
-                    str(y),
-                ]
-            )
-            events.append(
-                [
-                    ReportEventType.PROCESS_EVENT,
-                    ReportEventSubType.CHECKPOINT_REACHED,
-                    "loop_inv_chk",
-                ]
-            )
-            events.append(
-                [
-                    ReportEventType.COMPONENT_EVENT,
-                    "component",
-                    "component_func",
-                    str(x),
-                    str(y),
-                ]
-            )
-            events.append(
-                [ReportEventType.PROCESS_EVENT, ReportEventSubType.TASK_FINISHED, "loop"]
-            )
-            events.append(
-                [ReportEventType.TIMED_EVENT, ReportEventSubType.CLOCK_RESET, "sleep_clk"]
-            )
-            events.append(
-                [ReportEventType.TIMED_EVENT, ReportEventSubType.CLOCK_PAUSE, "sleep_clk"]
-            )
-            events.append(
-                [
-                    ReportEventType.PROCESS_EVENT,
-                    ReportEventSubType.CHECKPOINT_REACHED,
-                    "chk",
-                ]
-            )
-
         # Test if log matches
+        current_output = []
+
         with open(execution_log) as log:
             csv_reader = csv.reader(log)
 
-            for row, event in zip(csv_reader, events):
-                self.assertTrue(row[1:] == event)
+            for row in csv_reader:
+                current_output.append(row)
+
+        correct_output = []
+        with open(
+            "tests/integration/resources/test_check_all_events.csv"
+        ) as log:
+            csv_reader = csv.reader(log)
+
+            for row in csv_reader:
+                correct_output.append(row)
+
+        # Asserts
+        self.assertEqual(len(current_output), len(correct_output))
+
+        for i, (row_a, row_b) in enumerate(
+            zip(current_output, correct_output)
+        ):
+            self.assertEqual(
+                row_a[1:],
+                row_b[1:],
+            )
+
+    def tearDown(self):
+        try:
+            os.remove("tests/integration/all_events.log")
+        except FileNotFoundError:
+            pass
 
 
 if __name__ == "__main__":

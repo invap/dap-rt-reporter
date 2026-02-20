@@ -23,14 +23,14 @@ class RTReporterBuilder:
 
         return Reporter(self.event_writer, self.debugger_connection)
 
-    def with_gdb(self, sut: str, args: str) -> Self:
+    def with_gdb(self, sut: str, args: str = "") -> Self:
         if self.debugger_connection is not None:
             raise MultipleDebuggerConnectionError
 
         self.debugger_connection = GDBConnection(sut, args)
         return self
 
-    def with_lldb(self, sut: str, args: str) -> Self:
+    def with_lldb(self, sut: str, args: str = "") -> Self:
         if self.debugger_connection is not None:
             raise MultipleDebuggerConnectionError
 

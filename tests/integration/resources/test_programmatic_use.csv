@@ -1,0 +1,11 @@
+1770605871914666,process_event,checkpoint_reached,test_checkpoint
+1770605871915383,state_event,variable_value_assigned,var_x,2
+1770605873917714,state_event,variable_value_assigned,var_x,4
+1770605875920943,state_event,variable_value_assigned,var_x,8
+1770605877923684,state_event,variable_value_assigned,var_x,16
+1770605879926548,state_event,variable_value_assigned,var_x,32
+1770605881929669,state_event,variable_value_assigned,var_x,64
+1770605883932422,state_event,variable_value_assigned,var_x,128
+1770605885935777,state_event,variable_value_assigned,var_x,256
+1770605887939139,state_event,variable_value_assigned,var_x,512
+1770605889942165,state_event,variable_value_assigned,var_x,1024

@@ -21,7 +21,7 @@ logger = logging.getLogger(__name__)
 class GDBConnection(ConnectionWrapper):
     """Wrapper for the connection between the DAP client and GDB."""
 
-    def __init__(self, executable: str, executable_args: str) -> None:
+    def __init__(self, executable: str, executable_args: str = "") -> None:
         """Initialize connection with GDB via DAP.
 
         Args:

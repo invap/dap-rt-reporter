@@ -14,7 +14,7 @@ logger = logging.getLogger(__name__)
 class LLDBConnection(ConnectionWrapper):
     """Wrapper for the connection between the DAP client and debugger."""
 
-    def __init__(self, executable: str, executable_args: str) -> None:
+    def __init__(self, executable: str, executable_args: str = "") -> None:
         super().__init__(executable, executable_args)
         self.alive = True
 

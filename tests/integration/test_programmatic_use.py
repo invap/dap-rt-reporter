@@ -5,25 +5,33 @@
 
 import unittest
 import csv
+import os
 
-from dap_rt_reporter.reporter import Reporter
-from dap_rt_reporter.event.checkpoint_reached_event import CheckpointReachedEvent
+from dap_rt_reporter.rt_reporter import RTReporterBuilder
+from dap_rt_reporter.event.checkpoint_reached_event import (
+    CheckpointReachedEvent,
+)
 from dap_rt_reporter.event.variable_value_assigned_event import (
     VariableValueAssignedEvent,
 )
-from dap_rt_reporter.types import ReportEventSubType, ReportEventType
 
 
 class TestProgrammaticUse(unittest.TestCase):
+    """Test the programmatic example used in the README"""
+
     def test_programmatic_example(self):
         # Binary, log paths and source
-        sut_path = "tests/integration/resources/simple_test/target/debug/simple_test"
-        execution_log = "tests/integration/programmatic.log"
+        sut = (
+            "tests/integration/resources/simple_test/target/debug/simple_test"
+        )
+        output_file = "tests/integration/programmatic.log"
         source_path = "tests/integration/resources/simple_test/src/main.rs"
-
         # Initialize reporter
-        reporter = Reporter(
-            executable_path=sut_path, execution_trace_log_path=execution_log
+        reporter = (
+            RTReporterBuilder()
+            .with_gdb(sut, source_path)
+            .with_file_writer(output_file)
+            .build()
         )
 
         # Set checkpoint event on line 12
@@ -51,34 +59,42 @@ class TestProgrammaticUse(unittest.TestCase):
         terminated = reporter.execute()
         reporter.close()
 
-        # Build expected log
-        events = []
-        events.append(
-            [
-                ReportEventType.PROCESS_EVENT,
-                ReportEventSubType.CHECKPOINT_REACHED,
-                "test_checkpoint",
-            ]
-        )
-
-        for i in range(10):
-            events.append(
-                [
-                    ReportEventType.STATE_EVENT,
-                    ReportEventSubType.VARIABLE_VALUE_ASSIGNED,
-                    "var_x",
-                    str(2**(i + 1)),
-                ]
-            )
-
         # Test if log matches
-        with open(execution_log) as log:
+        current_output = []
+
+        with open(output_file) as log:
             csv_reader = csv.reader(log)
 
-            for row, event in zip(csv_reader, events):
-                self.assertTrue(row[1:] == event)
+            for row in csv_reader:
+                current_output.append(row)
+
+        correct_output = []
+        with open(
+            "tests/integration/resources/test_programmatic_use.csv"
+        ) as log:
+            csv_reader = csv.reader(log)
+
+            for row in csv_reader:
+                correct_output.append(row)
+
+        # Asserts
+        self.assertEqual(len(current_output), len(correct_output))
+
+        for i, (row_a, row_b) in enumerate(
+            zip(current_output, correct_output)
+        ):
+            self.assertEqual(
+                row_a[1:],
+                row_b[1:],
+            )
 
         self.assertTrue(terminated)
+
+    def tearDown(self):
+        try:
+            os.remove("tests/integration/programmatic.log")
+        except FileNotFoundError:
+            pass
 
 
 if __name__ == "__main__":
