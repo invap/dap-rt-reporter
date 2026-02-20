@@ -1,11 +1,26 @@
 class DAPReporterError(Exception):
     """DAP Reporter error"""
 
+
 class ReporterInitError(DAPReporterError):
-    """An invalid debugger was selected"""
+    """Reporter could not be initialized"""
+
 
 class ExecutionError(DAPReporterError):
-    """An error occured during progran execution"""
+    """An error occurred during program execution"""
+
 
 class SetupError(DAPReporterError):
     """Could not set up breakpoint locations"""
+
+
+class MultipleDebuggerConnectionError(DAPReporterError):
+    """Only one debugger connection is allowed"""
+
+
+class MultipleEventWriterError(DAPReporterError):
+    """Only one event writer is allowed"""
+
+
+class ReporterBuildError(DAPReporterError):
+    """Reporter could not build reporter"""

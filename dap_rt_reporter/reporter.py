@@ -1,85 +1,50 @@
 # Copyright (C) <2024>  INVAP S.E.
 # SPDX-License-Identifier: AGPL-3.0-or-later
 
-import csv
 import logging
 import time
 
-from dap_rt_reporter.connection.gdb_connection import GDBConnection
-from dap_rt_reporter.connection.lldb_connection import LLDBConnection
 from dap_rt_reporter.event.event import Event
 from dap_rt_reporter.listener import Listener
 from dap_rt_reporter.types import DAPEvent, DAPMessage, DAPRequest
 from dap_rt_reporter.errors import (
-    ReporterInitError,
     ExecutionError,
     SetupError,
 )
 from dap_rt_reporter.connection.errors import (
-    SpawnError,
     DAPRequestError,
     DAPResponseError,
 )
+from dap_rt_reporter.event_writer.event_writer import EventWriter
+from dap_rt_reporter.connection.connection_wrapper import ConnectionWrapper
 
 logger = logging.getLogger(__name__)
 
 
 class Reporter:
-    """Connects DAP client and GDB then uses output to report
-    program behavior.
+    """Reporter manages the report logic for events, handling DAP events and requests from
+    debuggers.
     """
 
     def __init__(
         self,
-        executable_path: str,
-        execution_trace_log_path: str,
-        executable_args: str = "",
-        debugger_selection: str = "gdb",
-        use_rabbitmq: bool = False,
+        event_writer: EventWriter,
+        debugger_connection: ConnectionWrapper,
     ) -> None:
         """Initializes a reporter.
 
         Args:
-            executable_path (str): Path to the SUT executable.
-            execution_trace_log_path (str): Path to the output  file.
-            executable_args (str, optional): Arguments to pass to the SUT. Defaults to "".
-            debugger_selection (str, optional): Select debugger to use during execution, accepted options are gdb and lldb. Defaults to "gdb".
-            use_rabbitmq (bool, optional): Flag to set when using RabbitMQ server. Defaults to False.
+            event_writer (EventWriter): Writer used to write events to
+            debugger_connection (ConnectionWrapper): Debugger connection wrapper for DAP communication
 
         Raises:
             RuntimeError: _description_
         """
 
-        # Use debugger connection gdb/lldb
-        self.debugger_selection = debugger_selection
-        match self.debugger_selection:
-            case "gdb":
-                self.debugger_connection = GDBConnection
-            case "lldb":
-                self.debugger_connection = LLDBConnection
-            case _:
-                raise ReporterInitError(
-                    "Invalid debugger option, valid options are gdb and lldb"
-                )
-
-        try:
-            self.debugger_connection = self.debugger_connection(
-                executable_path, executable_args
-            )
-        except SpawnError as e:
-            logger.error(
-                "DAP Reporter could not initialize debugger %s",
-                self.debugger_selection,
-            )
-            raise ReporterInitError(
-                f"Debugger {self.debugger_selection} could not be initialized"
-            ) from e
-
         # Create listener
-        self.listener = Listener(use_rabbitmq)
+        self.listener = Listener(event_writer)
 
-        self.execution_trace_log_path = execution_trace_log_path
-        self.use_rabbitmq = use_rabbitmq
+        self.debugger_connection = debugger_connection
 
         # Used for saving events
         self.events: list[Event] = []
@@ -95,73 +60,66 @@ class Reporter:
         """
 
         init_time = time.time()
-        # Open csv file and start execution
-        with open(
-            self.execution_trace_log_path, "w", encoding="utf8"
-        ) as report_file:
-            csv_writer = csv.writer(report_file, delimiter=",")
+        try:
+            self.debugger_connection.initialize()
+        except DAPRequestError as e:
+            logger.error("Initialize request could not be sent.")
+            raise ExecutionError("Initialize request error") from e
+
+        try:
+            self.debugger_connection.launch()
+            self._set_up()
+        except DAPRequestError as e:
+            logger.error("Launch request could not be sent.")
+            raise ExecutionError("Launch request error") from e
+        except SetupError as e:
+            raise ExecutionError(
+                "Breakpoints set up was not completed successfully"
+            ) from e
+
+        # Start execution after configuration done is received
+        logger.info("Starting SUT execution")
+
+        try:
+            self.debugger_connection.configuration_done()
+        except DAPRequestError as e:
+            logger.error("Configuration done request could not be sent.")
+            raise ExecutionError("Configuration done request error") from e
+
+        terminated = False
+        while not terminated and self.debugger_connection.get_alive():
+            # Get response from debugger
 
             try:
-                self.debugger_connection.initialize()
-            except DAPRequestError as e:
-                logger.error("Initialize request could not be sent.")
-                raise ExecutionError("Initialize request error") from e
-
-            try:
-                self.debugger_connection.launch()
-                self._set_up()
-            except DAPRequestError as e:
-                logger.error("Launch request could not be sent.")
-                raise ExecutionError("Launch request error") from e
-            except SetupError as e:
+                response = self.debugger_connection.get_response()
+                response = Event.parse_dap_response(response)
+            except DAPResponseError as e:
+                logger.error("Could not read DAP response")
                 raise ExecutionError(
-                    "Breakpoints set up was not completed successfully"
+                    "DAP response was not received correctly"
                 ) from e
 
-            # Start execution after configuration done is received
-            logger.info("Starting SUT execution")
-
+            logger.debug("DAP Response: %s", response)
+            # Logic to control program execution
             try:
-                self.debugger_connection.configuration_done()
-            except DAPRequestError as e:
-                logger.error("Configuration done request could not be sent.")
-                raise ExecutionError("Configuration done request error") from e
-
-            terminated = False
-            while not terminated and self.debugger_connection.get_alive():
-                # Get response from debugger
-
-                try:
-                    response = self.debugger_connection.get_response()
-                    response = Event.parse_dap_response(response)
-                except DAPResponseError as e:
-                    logger.error("Could not read DAP response")
-                    raise ExecutionError(
-                        "DAP response was not received correctly"
-                    ) from e
-
-                logger.debug("DAP Response: %s", response)
-                # Logic to control program execution
-                try:
-                    if response["type"] == DAPMessage.EVENT:
-                        if (
-                            response["event"] == DAPEvent.STOPPED
-                            and response["body"]["reason"] == "breakpoint"
-                        ):
-                            self.listener.handle_response(
-                                int(1e6 * time.time()),
-                                response,
-                                csv_writer,
-                                self.debugger_connection,
-                                True,
-                            )
-                            self.debugger_connection.continue_execution()
-                        elif response["event"] == DAPEvent.TERMINATED:
-                            terminated = True
-                except KeyError as e:
-                    raise ExecutionError(
-                        "Invalid DAP response was received, incorrect format"
-                    ) from e
+                if response["type"] == DAPMessage.EVENT:
+                    if (
+                        response["event"] == DAPEvent.STOPPED
+                        and response["body"]["reason"] == "breakpoint"
+                    ):
+                        self.listener.handle_response(
+                            int(1e6 * time.time()),
+                            response,
+                            self.debugger_connection,
+                            True,
+                        )
+                        self.debugger_connection.continue_execution()
+                    elif response["event"] == DAPEvent.TERMINATED:
+                        terminated = True
+            except KeyError as e:
+                raise ExecutionError(
+                    "Invalid DAP response was received, incorrect format"
+                ) from e
 
         logger.info("Closing reporter")
         logger.info("Program execution time: %s", time.time() - init_time)
@@ -280,6 +238,4 @@ class Reporter:
 
         logger.info("Closing debugger connection.")
         self.debugger_connection.close()
-
-        if self.use_rabbitmq:
-            self.listener.publish_termination()
+        self.listener.close()

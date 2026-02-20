@@ -22,6 +22,7 @@ from dap_rt_reporter.event.variable_value_assigned_event import (
 )
 from dap_rt_reporter.rabbitmq_connection import rabbitmq_server_connections
 from dap_rt_reporter.reporter import Reporter
+from dap_rt_reporter.rt_reporter import RTReporterBuilder
 from dap_rt_reporter.types import ReportEventSubType
 
 logger = logging.getLogger("dap_rt_reporter")
@@ -53,10 +54,22 @@ def dap_rt_reporter_runner(
 
     signal.signal(signal.SIGINT, sigint_handler)
 
-    # Create and configure reporter
-    reporter = Reporter(
-        sut, report_file, sut_args, debugger_selection, use_rabbitmq
-    )
+    # Create and configure reporter builder
+    reporter_builder = RTReporterBuilder()
+
+    match debugger_selection:
+        case "gdb":
+            reporter_builder.with_gdb(sut, sut_args)
+        case "lldb":
+            reporter_builder.with_lldb(sut, sut_args)
+
+    if use_rabbitmq:
+        reporter_builder.with_rabbitmq_writer()
+    else:
+        reporter_builder.with_file_writer(report_file)
+
+    # Create reporter
+    reporter = reporter_builder.build()
 
     parse_configuration_file(reporter, config_file)
 
