@@ -28,8 +28,8 @@ class Reporter:
 
     def __init__(
         self,
-        event_writer: EventWriter,
         debugger_connection: ConnectionWrapper,
+        event_writer: EventWriter,
     ) -> None:
         """Initializes a reporter.
 

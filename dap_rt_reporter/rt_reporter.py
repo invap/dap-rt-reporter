@@ -21,7 +21,7 @@ class RTReporterBuilder:
         if self.debugger_connection is None or self.event_writer is None:
             raise ReporterBuildError
 
-        return Reporter(self.event_writer, self.debugger_connection)
+        return Reporter(self.debugger_connection, self.event_writer)
 
     def with_gdb(self, sut: str, args: str = "") -> Self:
         if self.debugger_connection is not None:
