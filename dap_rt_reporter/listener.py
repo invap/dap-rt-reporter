@@ -41,14 +41,20 @@ class Listener:
         debugger_connection: ConnectionWrapper,
         before: bool,
     ) -> str:
-        """Handle breakpoint responses."""
+        """Handle breakpoint responses.
+
+        Returns:
+            str: Return the values of the breakpoint id
+            for the breakpoint associated.
+        """
 
         # Set before or after key
         before_key: Literal["b"] | Literal["a"] = "b" if before else "a"
 
         # Get breakpoint and thread id from response
-        breakpoint_id = response["body"]["hitBreakpointIds"][0]
+        breakpoint_id: str = response["body"]["hitBreakpointIds"][0]
         thread_id = response["body"]["threadId"]
+
         # Report each event in event list
         for event in self.events[breakpoint_id][before_key]:
             report = event.report(timestamp, debugger_connection, thread_id)
@@ -66,6 +72,25 @@ class Listener:
     def is_after(self, id: str) -> int:
         return len(self.events[id]["a"])
 
+    def get_source_from_id(self, id: str) -> str:
+        source = ""
+
+        if len(self.events[id]["b"]):
+            source = self.events[id]["b"][0].source_path
+        elif len(self.events[id]["a"]):
+            source = self.events[id]["a"][0].source_path
+
+        return source
+
+    def get_line_from_id(self, id: str) -> int:
+        line = -1
+
+        if len(self.events[id]["b"]):
+            line = self.events[id]["b"][0].line
+        elif len(self.events[id]["a"]):
+            line = self.events[id]["a"][0].line
+
+        return line
 
     def add_event(self, breakpoint_id, event: Event) -> None:
         """Adds event to listen list, uses breakpoint id as identifier."""
@@ -99,13 +124,11 @@ class Listener:
         except EventCSVError:
             logger.info("Error when parsing event csv: %s", event_string)
             sys.exit(-1)
-        
+
         try:
             event_dict = EventDictCoDec.to_dict(event_u)
         except EventTypeError:
-            logger.info(
-                "Error building event dictionary from event: %s", event_u
-            )
+            logger.info("Error building event dictionary from event: %s", event_u)
             sys.exit(-1)
 
         logger.debug("Publishing event: %s", event)

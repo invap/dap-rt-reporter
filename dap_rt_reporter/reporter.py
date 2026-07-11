@@ -4,7 +4,7 @@
 import csv
 import logging
 import time
-from enum import Enum
+from enum import Enum, auto
 
 from dap_rt_reporter.connection.gdb_connection import GDBConnection
 from dap_rt_reporter.connection.lldb_connection import LLDBConnection
@@ -18,13 +18,17 @@ logger = logging.getLogger(__name__)
 class ReporterState(Enum):
     """Reporter execution states"""
 
-    IDLE = 1
-    BEFORE = 2
-    CONTINUE = 3
-    NEXT = 4
-    AFTER = 5
-    EXIT = 6
-    CHECK_AFTER = 7
+    IDLE = auto()
+    BREAKPOINT = auto()
+    EXIT = auto()
+
+
+class BreakpointHandleState(Enum):
+    """Breakpoint handling states"""
+
+    BEFORE = auto()
+    CONTINUE = auto()
+    AFTER = auto()
 
 
 class Reporter:
@@ -67,7 +71,7 @@ class Reporter:
             case _:
                 raise RuntimeError("Invalid debugger option.")
 
-        self.state = ReporterState.IDLE
+        self.state: ReporterState = ReporterState.IDLE
 
         # Create listener
         self.listener = Listener(use_rabbitmq)
@@ -87,9 +91,7 @@ class Reporter:
 
         init_time = time.time()
         # Open csv file and start execution
-        with open(
-            self.execution_trace_log_path, "w", encoding="utf8"
-        ) as report_file:
+        with open(self.execution_trace_log_path, "w", encoding="utf8") as report_file:
             csv_writer = csv.writer(report_file, delimiter=",")
 
             self.debugger_connection.initialize()
@@ -109,20 +111,22 @@ class Reporter:
             self.state = ReporterState.IDLE
 
             # Logic to control program execution
-            terminated = self.handle_breakpoints(csv_writer)
+            terminated = self.execution_loop(csv_writer)
 
         logger.info("Closing reporter")
         logger.info("Program execution time: %s", time.time() - init_time)
 
         return terminated
 
-    def handle_breakpoints(self, csv_writer) -> bool:
-        prev_response = ""
-        breakpoint_id = -1
+    def execution_loop(self, csv_writer) -> bool:
+        """Main execution and control loop"""
+
+        response = {}
 
         while self.debugger_connection.get_alive():
             match self.state:
                 case ReporterState.IDLE:
+                    # Program is executing and waiting for breakpoints or termination
                     response = self.debugger_connection.get_response()
                     response = Event.parse_dap_response(response)
 
@@ -131,61 +135,150 @@ class Reporter:
                             response["event"] == DAPEvent.STOPPED
                             and response["body"]["reason"] == "breakpoint"
                         ):
-                            self.state = ReporterState.BEFORE
+                            self.state = ReporterState.BREAKPOINT
                         elif response["event"] == DAPEvent.TERMINATED:
                             self.state = ReporterState.EXIT
 
-                case ReporterState.BEFORE:
+                case ReporterState.BREAKPOINT:
+                    # Breakpoint hit
+                    self.handle_breakpoints(csv_writer, response)
+                    self.state = ReporterState.IDLE
+
+                case ReporterState.EXIT:
+                    # Program terminates
+                    return True
+
+        return False
+
+    def handle_breakpoints(self, csv_writer, initial_hit_response) -> ReporterState:
+        """Loop for breakpoint handling"""
+
+        current_state = BreakpointHandleState.BEFORE
+        current_response = initial_hit_response
+
+        breakpoint_event = current_response
+        breakpoint_id = -1
+        breakpoint_source = ""
+        breakpoint_line = -1
+
+        while self.debugger_connection.get_alive():
+            match current_state:
+                case BreakpointHandleState.BEFORE:
+                    # A breakpoint hit occured in the current line, handle all before events
+                    # Save the breakpoint id, source and line to handle after events
                     breakpoint_id = self.listener.handle_response(
                         int(1e6 * time.time()),
-                        response,
+                        breakpoint_event,
                         csv_writer,
                         self.debugger_connection,
                         True,
                     )
 
+                    # Handle the after events or continue execution
                     if self.listener.is_after(breakpoint_id):
-                        prev_response = response
-                        self.state = ReporterState.NEXT
+                        breakpoint_source = self.listener.get_source_from_id(
+                            breakpoint_id
+                        )
+                        breakpoint_line = self.listener.get_line_from_id(breakpoint_id)
+                        current_state = BreakpointHandleState.AFTER
                     else:
-                        self.state = ReporterState.CONTINUE
+                        current_state = BreakpointHandleState.CONTINUE
 
-                case ReporterState.CONTINUE:
-                    self.debugger_connection.continue_execution()
-                    self.state = ReporterState.IDLE
+                case BreakpointHandleState.AFTER:
+                    # A breakpoint hit occured in the current line, handle all after events
 
-                case ReporterState.NEXT:
+                    # Get the thread id that produced the stopped event
+                    thread_id = breakpoint_event["body"]["threadId"]
+
+                    # Do a step request
                     self.debugger_connection.next()
-                    self.state = ReporterState.AFTER
 
-                case ReporterState.AFTER:
-                    response = self.debugger_connection.get_response()
-                    response = Event.parse_dap_response(response)
+                    # Wait for confirmation, this step may be skipped
+                    while self.debugger_connection.get_alive():
+                        current_response = self.debugger_connection.get_response()
+                        current_response = Event.parse_dap_response(current_response)
 
-                    if response["type"] == DAPMessage.EVENT:
-                        if response["event"] == DAPEvent.STOPPED:
+                        if current_response["type"] == DAPMessage.RESPONSE:
+                            if current_response["success"]:
+                                break
+                            else:
+                                return ReporterState.EXIT
 
+                    current_stopped_event = {}
+                    # Wait for completion
+                    while self.debugger_connection.get_alive():
+                        current_response = self.debugger_connection.get_response()
+                        current_response = Event.parse_dap_response(current_response)
+
+                        if current_response["type"] == DAPMessage.EVENT:
+                            if current_response["event"] == DAPEvent.STOPPED:
+                                # Save the current stopped event to handle if the after condition is met
+                                current_stopped_event = current_response
+                                break
+
+                    # Check if the line or source has changed
+                    self.debugger_connection.stack_trace(thread_id)
+
+                    current_line: str = ""
+                    current_source: str = ""
+                    while self.debugger_connection.get_alive():
+                        current_response = self.debugger_connection.get_response()
+                        current_response = Event.parse_dap_response(current_response)
+
+                        if (
+                            current_response["type"] == DAPMessage.RESPONSE
+                            and current_response["command"] == DAPRequest.STACKTRACE
+                        ):
+                            current_line = current_response["body"]["stackFrames"][0][
+                                "line"
+                            ]
+                            current_source = current_response["body"]["stackFrames"][0][
+                                "source"
+                            ]
+                            break
+
+                    print(breakpoint_line, current_line)
+
+                    print(int(current_line) != breakpoint_line)
+
+                    # If both the line or the file changed then handle the event
+                    if int(current_line) != breakpoint_line:
+                        # NOTE: If a breakpoint is somehow in the middle of this steps, that is in the middle of the before handle and the line change, then they are ignored
+                        # Handle de after events for the previous breakpoint
+                        if current_stopped_event["event"] == DAPEvent.STOPPED:
                             self.listener.handle_response(
                                 int(1e6 * time.time()),
-                                prev_response,
+                                breakpoint_event,
                                 csv_writer,
                                 self.debugger_connection,
                                 False,
                             )
 
-                            if response["body"]["reason"] == "breakpoint":
-                                prev_response = response
+                            if current_stopped_event["body"]["reason"] == "breakpoint":
+                                # If the stopped reason was breakpoint, go back to the before step and handle that event
+                                breakpoint_event = current_stopped_event
+                                current_state = BreakpointHandleState.BEFORE
+                            elif current_stopped_event["body"]["reason"] == "step":
+                                # If the stopped reason was next, continue execution because no new breakpoint was hit, finished handling
+                                current_state = BreakpointHandleState.CONTINUE
 
-                                self.state = ReporterState.BEFORE
-                            elif response["body"]["reason"] == "step":
-                                self.state = ReporterState.CONTINUE
-                        elif response["event"] == DAPEvent.TERMINATED:
-                            self.state = ReporterState.EXIT
+                case BreakpointHandleState.CONTINUE:
+                    # The current set of breakpoints was correctly handled
 
-                case ReporterState.EXIT:
-                    return (True, prev_response)
+                    # Continue execution and wait for confirmation
+                    self.debugger_connection.continue_execution()
 
-        return False
+                    while self.debugger_connection.get_alive():
+                        current_response = self.debugger_connection.get_response()
+                        current_response = Event.parse_dap_response(current_response)
+
+                        if current_response["type"] == DAPMessage.RESPONSE:
+                            if current_response["success"]:
+                                return ReporterState.IDLE
+                            else:
+                                return ReporterState.EXIT
+
+        return ReporterState.EXIT
 
     def _set_up(self) -> None:
         """Sets breakpoints and gives the events to listener.
@@ -240,16 +333,11 @@ class Reporter:
             # Check breakpoints verification
             # Read all responses until verification is confirmed
             breakpoint_verification = False
-            while (
-                not breakpoint_verification
-                and self.debugger_connection.get_alive()
-            ):
+            while not breakpoint_verification and self.debugger_connection.get_alive():
                 response = self.debugger_connection.get_response()
                 response = Event.parse_dap_response(response)
 
-                logger.debug(
-                    "At breakpoint verification DAP response: %s", response
-                )
+                logger.debug("At breakpoint verification DAP response: %s", response)
                 if (
                     response["type"] == DAPMessage.RESPONSE
                     and response["command"] == DAPRequest.SETBREAKPOINTS

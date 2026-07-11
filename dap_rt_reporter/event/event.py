@@ -1,22 +1,19 @@
 # Copyright (C) <2025>  INVAP S.E.
 # SPDX-License-Identifier: AGPL-3.0-or-later
 
-import re
 import json
-
+import re
+from abc import ABC, abstractmethod
 from typing import Any
 
-from abc import ABC, abstractmethod
-from dap_rt_reporter.types import DAPMessage, DAPRequest
 from dap_rt_reporter.connection.connection_wrapper import ConnectionWrapper
+from dap_rt_reporter.types import DAPMessage, DAPRequest
 
 
 class Event(ABC):
     """Event template"""
 
-    def __init__(
-        self, source_path: str, line: int, before: bool, name: str
-    ) -> None:
+    def __init__(self, source_path: str, line: int, before: bool, name: str) -> None:
         """Initialize new event.
 
         Args:
@@ -58,7 +55,7 @@ class Event(ABC):
         expression: str,
         thread_id: int,
         debugger_connection: ConnectionWrapper,
-    ) -> Any | None:
+    ) -> str:
         """Evaluate expression in current context inside SUT.
 
         Args:
@@ -89,9 +86,9 @@ class Event(ABC):
                 frame_id = response["body"]["stackFrames"][0]["id"]
 
         # Evaluate expression
-        result = None
+        result: str = ""
         debugger_connection.evaluate(expression, frame_id)
-        while result is None and debugger_connection.get_alive():
+        while not result and debugger_connection.get_alive():
             response = debugger_connection.get_response()
             response = self.parse_dap_response(response)
 
@@ -106,9 +103,7 @@ class Event(ABC):
 
         return result
 
-    def _get_event_name(
-        self, thread_id, debugger_connection: ConnectionWrapper
-    ) -> str:
+    def _get_event_name(self, thread_id, debugger_connection: ConnectionWrapper) -> str:
         """Evaluate expressions inside the event name.
         Event names with an expression between brackets {expression}
         are evaluated.
