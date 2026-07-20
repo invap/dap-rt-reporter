@@ -1,3 +1,7 @@
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
+
 [project]
 name = "dap-rt-reporter"
 version = "0.1.0"
@@ -8,16 +12,33 @@ authors = [
 ]
 license = "SPDX-License-Identifier: AGPL-3.0-or-later"
 readme = "README.md"
-requires-python = ">=3.11,<4.0"
-packages = [
-    { include = "dap_rt_reporter"},
-]
+requires-python = ">=3.11,<3.14"
 dependencies = [
   "dap-python (>=0.5.0)",
   "pika (>=1.3.2)",
   "rt-rabbitmq-wrapper @ git+https://github.com/invap/rt-rabbitmq-wrapper.git@v2.0.0"
 ]
 
-[build-system]
-requires = ["poetry-core"]
-build-backend = "poetry.core.masonry.api"
+[project.urls]
+repository = "https://github.com/invap/rt-reporter"
+
+[tool.poetry]
+packages = [
+    { include = "dap_rt_reporter" }
+]
+
+
+[dependency-groups]
+dev = [
+    "mypy (~=1.19.0)",
+    "pytomlcleaner (>=1.0.0,<2.0.0)"
+]
+
+[tool.mypy]
+python_version = "3.13"
+warn_return_any = true
+warn_unused_configs = true
+warn_unused_ignores = true
+disallow_untyped_defs = false
+ignore_missing_imports = true
+
