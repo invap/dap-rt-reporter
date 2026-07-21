@@ -101,6 +101,8 @@ class Event(ABC):
                 else:
                     raise RuntimeError(response["message"])
 
+        result = result.strip('"')
+
         return result
 
     def _get_event_name(self, thread_id, debugger_connection: ConnectionWrapper) -> str:
