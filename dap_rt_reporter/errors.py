@@ -6,6 +6,10 @@ class ReporterInitError(DAPReporterError):
     """Reporter could not be initialized"""
 
 
+class MessageKeyError(DAPReporterError):
+    """Missing key in DAP message"""
+
+
 class ExecutionError(DAPReporterError):
     """An error occurred during program execution"""
 
