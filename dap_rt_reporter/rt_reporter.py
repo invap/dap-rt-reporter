@@ -1,3 +1,6 @@
+# Copyright (C) <2026>  INVAP S.E.
+# SPDX-License-Identifier: AGPL-3.0-or-later
+
 from typing import Self
 
 from dap_rt_reporter.connection.gdb_connection import GDBConnection

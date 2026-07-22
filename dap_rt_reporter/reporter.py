@@ -94,7 +94,7 @@ class Reporter:
             raise ExecutionError("Launch request error") from e
 
         try:
-            self._set_up()
+            self._set_up_breakpoints()
         except SetupError as e:
             raise ExecutionError(
                 "Breakpoints set up was not completed successfully"
@@ -119,7 +119,7 @@ class Reporter:
                 "Invalid access to DAP message"
             ) from e
         except ExecutionError as e:
-            raise e
+            raise ExecutionError("Reporter execution loop failure") from e
 
 
         logger.info("Closing reporter")
@@ -136,7 +136,7 @@ class Reporter:
             match self.state:
                 case ReporterState.IDLE:
                     # Program is executing and waiting for breakpoints or termination
-                    response = self._get_next_response()
+                    response = self._get_next_message()
 
                     if response["type"] == DAPMessage.EVENT:
                         if (
@@ -203,7 +203,7 @@ class Reporter:
 
                     # Wait for confirmation, this step can be skipped
                     while self.debugger_connection.get_alive():
-                        current_response = self._get_next_response()
+                        current_response = self._get_next_message()
 
                         if current_response["type"] == DAPMessage.RESPONSE:
                             if current_response["success"]:
@@ -214,7 +214,7 @@ class Reporter:
                     current_stopped_event = {}
                     # Wait for completion
                     while self.debugger_connection.get_alive():
-                        current_response = self._get_next_response()
+                        current_response = self._get_next_message()
 
                         if current_response["type"] == DAPMessage.EVENT:
                             if current_response["event"] == DAPEvent.STOPPED:
@@ -227,7 +227,7 @@ class Reporter:
 
                     current_line: str = ""
                     while self.debugger_connection.get_alive():
-                        current_response = self._get_next_response()
+                        current_response = self._get_next_message()
 
                         if (
                             current_response["type"] == DAPMessage.RESPONSE
@@ -266,7 +266,7 @@ class Reporter:
                     self.debugger_connection.continue_execution()
 
                     while self.debugger_connection.get_alive():
-                        current_response = self._get_next_response()
+                        current_response = self._get_next_message()
 
                         if current_response["type"] == DAPMessage.RESPONSE:
                             if current_response["success"]:
@@ -276,11 +276,8 @@ class Reporter:
 
         return ReporterState.EXIT
 
-    def _set_up(self) -> None:
+    def _set_up_breakpoints(self) -> None:
         """Sets breakpoints and gives the events to listener.
-
-        Raises:
-            RuntimeError: _description_
         """
 
         logger.info("Setting breakpoints")
@@ -365,15 +362,21 @@ class Reporter:
                             )
                     breakpoint_verification = True
 
-    def _get_next_response(self) -> dict[str, Any]:
+    def _get_next_message(self) -> dict[str, Any]:
+        """Get the next DAP message from debugger_connection
+
+        Returns:
+            dict[str, Any]: Decoded DAP message
+        """
+
         try:
-            response = self.debugger_connection.get_response()
+            message = self.debugger_connection.get_response()
         except DAPResponseError as e:
             raise ExecutionError(
                 "DAP response was not received correctly"
             ) from e
 
-        return Event.parse_dap_response(response)
+        return Event.parse_dap_response(message)
 
     def set_event(self, event: Event) -> None:
         """Set new event to report.

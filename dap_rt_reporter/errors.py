@@ -1,3 +1,7 @@
+# Copyright (C) <2026>  INVAP S.E.
+# SPDX-License-Identifier: AGPL-3.0-or-later
+
+
 class DAPReporterError(Exception):
     """DAP Reporter error"""
 

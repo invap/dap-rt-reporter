@@ -7,6 +7,7 @@ import logging
 import os
 import signal
 
+from dap_rt_reporter.errors import DAPReporterError
 from dap_rt_reporter.event.checkpoint_reached_event import (
     CheckpointReachedEvent,
 )
@@ -74,7 +75,10 @@ def dap_rt_reporter_runner(
     parse_configuration_file(reporter, config_file)
 
     # Execute SUT with breakpoints
-    reporter.execute()
+    try:
+        reporter.execute()
+    except DAPReporterError as e:
+        logger.error(f"Reporter execution error: {e}")
 
     # Close reporter
     reporter.close()
