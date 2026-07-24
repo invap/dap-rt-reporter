@@ -55,7 +55,7 @@ class Event(ABC):
         expression: str,
         thread_id: int,
         debugger_connection: ConnectionWrapper,
-    ) -> str:
+    ) -> str | None:
         """Evaluate expression in current context inside SUT.
 
         Args:
@@ -74,38 +74,44 @@ class Event(ABC):
 
         # Get current frame id
         debugger_connection.stack_trace(thread_id)
-        frame_id = None
-        while frame_id is None and debugger_connection.get_alive():
-            response = debugger_connection.get_response()
-            response = self.parse_dap_response(response)
+        frame_id: int | None = None
+        while frame_id is None:
+            if debugger_connection.get_alive():
+                response = debugger_connection.get_response()
+                response = self.parse_dap_response(response)
 
-            if (
-                response["type"] == DAPMessage.RESPONSE
-                and response["command"] == DAPRequest.STACKTRACE
-            ):
-                frame_id = response["body"]["stackFrames"][0]["id"]
+                if (
+                    response["type"] == DAPMessage.RESPONSE
+                    and response["command"] == DAPRequest.STACKTRACE
+                ):
+                    frame_id = int(response["body"]["stackFrames"][0]["id"])
+            else:
+                return None
 
         # Evaluate expression
         result: str = ""
         debugger_connection.evaluate(expression, frame_id)
-        while not result and debugger_connection.get_alive():
-            response = debugger_connection.get_response()
-            response = self.parse_dap_response(response)
+        while not result:
+            if debugger_connection.get_alive():
+                response = debugger_connection.get_response()
+                response = self.parse_dap_response(response)
 
-            if (
-                response["type"] == DAPMessage.RESPONSE
-                and response["command"] == DAPRequest.EVALUATE
-            ):
-                if response["success"]:
-                    result = response["body"]["result"]
-                else:
-                    raise RuntimeError(response["message"])
+                if (
+                    response["type"] == DAPMessage.RESPONSE
+                    and response["command"] == DAPRequest.EVALUATE
+                ):
+                    if response["success"]:
+                        result = str(response["body"]["result"])
+                    else:
+                        raise RuntimeError(response["message"])
+            else:
+                return None
 
         result = result.strip('"')
 
         return result
 
-    def _get_event_name(self, thread_id, debugger_connection: ConnectionWrapper) -> str:
+    def _get_event_name(self, thread_id: int, debugger_connection: ConnectionWrapper) -> str:
         """Evaluate expressions inside the event name.
         Event names with an expression between brackets {expression}
         are evaluated.
@@ -150,7 +156,7 @@ class Event(ABC):
     @abstractmethod
     def report(
         self,
-        timestamp: int | float,
+        timestamp: float,
         debugger_connection: ConnectionWrapper,
         thread_id: int,
     ) -> list[Any]:

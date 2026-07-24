@@ -1,11 +1,11 @@
 # Copyright (C) <2025>  INVAP S.E.
 # SPDX-License-Identifier: AGPL-3.0-or-later
 
-from typing import Any
+from typing import override
 
+from dap_rt_reporter.connection.connection_wrapper import ConnectionWrapper
 from dap_rt_reporter.event.state_event import StateEvent
 from dap_rt_reporter.types import ReportEventSubType
-from dap_rt_reporter.connection.connection_wrapper import ConnectionWrapper
 
 
 class VariableValueAssignedEvent(StateEvent):
@@ -31,14 +31,15 @@ class VariableValueAssignedEvent(StateEvent):
 
         super().__init__(source_path, line, before, name)
         self._set_sub_type(ReportEventSubType.VARIABLE_VALUE_ASSIGNED)
-        self.expression = expression
+        self.expression: str = expression
 
+    @override
     def report(
         self,
-        timestamp: int | float,
+        timestamp: float,
         debugger_connection: ConnectionWrapper,
         thread_id: int,
-    ) -> list[Any]:
+    ):
         """Report a variable_value_assigned event.
         The output format is:
 
