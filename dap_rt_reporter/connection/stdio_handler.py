@@ -1,9 +1,10 @@
 # Copyright (C) <2024>  INVAP S.E.
 # SPDX-License-Identifier: AGPL-3.0-or-later
 
-import subprocess
 import fcntl
 import os
+import subprocess
+from typing import cast
 
 from dap_rt_reporter.connection.errors import ReadError, SpawnError, WriteError
 
@@ -20,10 +21,10 @@ class STDIOHandler:
         Raises:
             SpawnError: Debugger could not be started
         """
-        self.launch_command = launch_command
+        self.launch_command: list[str] = launch_command
 
         try:
-            self.debugger_subprocess = subprocess.Popen(
+            self.debugger_subprocess: subprocess.Popen[bytes] = subprocess.Popen(
                 self.launch_command,
                 shell=False,
                 stdout=subprocess.PIPE,
@@ -38,10 +39,10 @@ class STDIOHandler:
             self.debugger_subprocess.stdout is not None
             and self.debugger_subprocess.stderr is not None
         ):
-            fcntl.fcntl(
+            _ = fcntl.fcntl(
                 self.debugger_subprocess.stdout, fcntl.F_SETFL, os.O_NONBLOCK
             )
-            fcntl.fcntl(
+            _ = fcntl.fcntl(
                 self.debugger_subprocess.stderr, fcntl.F_SETFL, os.O_NONBLOCK
             )
         else:
@@ -59,7 +60,7 @@ class STDIOHandler:
             WriteError: Subprocess or STDIN are None
         """
         if self.debugger_subprocess and self.debugger_subprocess.stdin:
-            self.debugger_subprocess.stdin.write(command)
+            _ = self.debugger_subprocess.stdin.write(command)
             self.debugger_subprocess.stdin.flush()
         else:
             raise WriteError("Invalid debugger state subprocess is None")
@@ -79,7 +80,8 @@ class STDIOHandler:
             )
 
         self.debugger_subprocess.stdout.flush()
-        return self.debugger_subprocess.stdout.read()
+
+        return cast(bytes, self.debugger_subprocess.stdout.read())
 
     def close(self):
         """Attempt to close the debugger politely, if timeout is reached the
@@ -94,6 +96,6 @@ class STDIOHandler:
 
         self.debugger_subprocess.terminate()
         try:
-            self.debugger_subprocess.wait(1)
+            _ = self.debugger_subprocess.wait(1)
         except subprocess.TimeoutExpired:
             self.debugger_subprocess.kill()

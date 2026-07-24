@@ -2,8 +2,10 @@
 # SPDX-License-Identifier: AGPL-3.0-or-later
 
 import logging
+from typing import cast, override
 
 import dap
+from dap.types import Source
 
 from dap_rt_reporter.connection.connection_wrapper import ConnectionWrapper
 from dap_rt_reporter.connection.stdio_handler import STDIOHandler
@@ -16,16 +18,16 @@ class LLDBConnection(ConnectionWrapper):
 
     def __init__(self, executable: str, executable_args: str = "") -> None:
         super().__init__(executable, executable_args)
-        self.alive = True
+        self.alive: bool = True
 
-        self.launch_command = ["lldb-dap-19"]
+        self.launch_command: list[str] = ["lldb-dap-19"]
 
-        self.stdio_handler = STDIOHandler(self.launch_command)
-        self.dap_client = dap.Client("DAP Client")
+        self.stdio_handler: STDIOHandler = STDIOHandler(self.launch_command)
+        self.dap_client: dap.Client = dap.Client("DAP Client")
 
-        self.response_buffer = b""
-        self.receive_message_count = 0
-        self.send_message_count = 0
+        self.response_buffer: bytes = b""
+        self.receive_message_count: int = 0
+        self.send_message_count: int = 0
 
     def _send(self):
         """Clears the DAP client buffer and writes the commands to the stdio pipe."""
@@ -34,6 +36,7 @@ class LLDBConnection(ConnectionWrapper):
         self.stdio_handler.write(command)
         self.send_message_count += 1
 
+    @override
     def get_response(self) -> bytes:
         """Gets next response from buffer or debugger. If not alive return empty response."""
 
@@ -54,17 +57,19 @@ class LLDBConnection(ConnectionWrapper):
 
         return b""
 
+    @override
     def initialize(self):
         """Send initialize request."""
 
         # Client already loads the request so only send is needed
         self._send()
 
+    @override
     def launch(self):
         """Sends launch request to debugger."""
 
         # Custom request for lldb
-        self.dap_client.send_request(
+        _ = self.dap_client.send_request(
             command="launch",
             arguments={
                 "program": self.executable,
@@ -74,44 +79,51 @@ class LLDBConnection(ConnectionWrapper):
         )
         self._send()
 
+    @override
     def configuration_done(self):
         """Send configuration done request."""
 
-        self.dap_client.configuration_done()
+        _ = self.dap_client.configuration_done()
         self._send()
 
-    def set_breakpoints_source(self, source, breakpoints):
+    @override
+    def set_breakpoints_source(self, source: str, breakpoints):
         """Send set breakpoints in source request, clears all past breakpoints."""
 
-        self.dap_client.set_breakpoints(source=source, breakpoints=breakpoints)
+        _ = self.dap_client.set_breakpoints(source=cast(Source, cast(object, source)), breakpoints=breakpoints)
         self._send()
 
+    @override
     def continue_execution(self):
         """Send continue command at thread id 0."""
 
-        self.dap_client.continue_(thread_id=0, single_thread=False)
+        _ = self.dap_client.continue_(thread_id=0, single_thread=False)
         self._send()
 
+    @override
     def next(self):
         """Send next command to thread id 0."""
 
-        self.dap_client.next(thread_id=0)
+        _ = self.dap_client.next(thread_id=0)
         self._send()
 
+    @override
     def evaluate(self, expression: str, frame_id: int):
         """Sends evaluate command with given expression in current frame."""
 
-        self.dap_client.evaluate(expression=expression, frame_id=frame_id)
+        _ = self.dap_client.evaluate(expression=expression, frame_id=frame_id)
         self._send()
 
+    @override
     def stack_trace(self, thread_id: int):
         """Send stack trace request"""
 
-        self.dap_client.stack_trace(
+        _ = self.dap_client.stack_trace(
             thread_id=thread_id, start_frame=0, levels=1
         )
         self._send()
 
+    @override
     def close(self):
         """Kill debugger subprocess."""
 
