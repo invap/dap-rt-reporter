@@ -12,10 +12,10 @@ class ConnectionWrapper(ABC):
     def __init__(self, executable: str, executable_args: str):
         super().__init__()
 
-        self.executable = executable
-        self.executable_args = executable_args
+        self.executable: str = executable
+        self.executable_args: str = executable_args
 
-        self.alive = True
+        self.alive: bool = True
 
     def get_alive(self) -> bool:
         """Get if the connection is alive.
@@ -52,7 +52,7 @@ class ConnectionWrapper(ABC):
         pass
 
     @abstractmethod
-    def set_breakpoints_source(self, source, breakpoints):
+    def set_breakpoints_source(self, source: str, breakpoints):
         pass
 
     @abstractmethod
@@ -64,11 +64,11 @@ class ConnectionWrapper(ABC):
         pass
 
     @abstractmethod
-    def evaluate(self, expression, frame_id):
+    def evaluate(self, expression: str, frame_id: int):
         pass
 
     @abstractmethod
-    def stack_trace(self, thread_id):
+    def stack_trace(self, thread_id: int):
         pass
 
     @abstractmethod

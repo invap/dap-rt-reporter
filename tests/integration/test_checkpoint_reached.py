@@ -1,14 +1,15 @@
 # Copyright (C) <2024>  INVAP S.E.
 # SPDX-License-Identifier: AGPL-3.0-or-later
 
-import unittest
 import csv
 import os
+import unittest
+from typing import override
 
-from dap_rt_reporter.rt_reporter import RTReporterBuilder
 from dap_rt_reporter.event.checkpoint_reached_event import (
     CheckpointReachedEvent,
 )
+from dap_rt_reporter.rt_reporter import RTReporterBuilder
 
 
 class TestCheckpointReached(unittest.TestCase):
@@ -20,7 +21,7 @@ class TestCheckpointReached(unittest.TestCase):
         )
         execution_log = "tests/integration/checkpoints.log"
 
-        self.reporter = (
+        reporter = (
             RTReporterBuilder()
             .with_gdb(sut)
             .with_file_writer(execution_log)
@@ -28,43 +29,37 @@ class TestCheckpointReached(unittest.TestCase):
         )
 
         # Set checkpoints
-        self.reporter.set_event(
+        reporter.set_event(
             CheckpointReachedEvent(
                 source_path="main.rs", line=12, before=True, name="chk_0"
             )
         )
 
-        self.reporter.set_event(
+        reporter.set_event(
             CheckpointReachedEvent(
                 source_path="main.rs", line=16, before=True, name="chk_1"
             )
         )
-        self.reporter.set_event(
+        reporter.set_event(
             CheckpointReachedEvent(
                 source_path="main.rs", line=25, before=True, name="chk_2"
             )
         )
 
-        self.reporter.execute()
-        self.reporter.close()
+        assert(reporter.execute())
+        reporter.close()
 
         # Test if log matches
-        current_output = []
+        current_output: list[list[str]] = []
 
         with open(execution_log) as log:
-            csv_reader = csv.reader(log)
+            current_output = list(csv.reader(log))
 
-            for row in csv_reader:
-                current_output.append(row)
-
-        correct_output = []
+        correct_output: list[list[str]] = []
         with open(
             "tests/integration/resources/test_checkpoint_reached.csv"
         ) as log:
-            csv_reader = csv.reader(log)
-
-            for row in csv_reader:
-                correct_output.append(row)
+            current_output = list(csv.reader(log))
 
         # Asserts
         self.assertEqual(len(current_output), len(correct_output))
@@ -77,6 +72,7 @@ class TestCheckpointReached(unittest.TestCase):
                 row_b[1:],
             )
 
+    @override
     def tearDown(self):
         try:
             os.remove("tests/integration/checkpoints.log")
@@ -85,4 +81,4 @@ class TestCheckpointReached(unittest.TestCase):
 
 
 if __name__ == "__main__":
-    unittest.main()
+    _ = unittest.main()

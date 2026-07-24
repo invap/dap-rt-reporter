@@ -5,8 +5,9 @@
 # Doesn't check if initialize is succesuful
 # Should print launch sequence and end with terminate
 
-import unittest
 import os
+import unittest
+from typing import override
 
 from dap_rt_reporter.rt_reporter import RTReporterBuilder
 
@@ -20,19 +21,20 @@ class TestExecuteProgram(unittest.TestCase):
         )
         output_file = "tests/integration/execute.log"
 
-        self.reporter = (
+        reporter = (
             RTReporterBuilder()
             .with_gdb(sut)
             .with_file_writer(output_file)
             .build()
         )
 
-        terminate = self.reporter.execute()
-        self.reporter.close()
+        terminate = reporter.execute()
+        reporter.close()
 
         # Checks if response contains a terminated event
         self.assertTrue(terminate)
 
+    @override
     def tearDown(self):
         try:
             os.remove("tests/integration/execute.log")
@@ -41,4 +43,4 @@ class TestExecuteProgram(unittest.TestCase):
 
 
 if __name__ == "__main__":
-    unittest.main()
+    _ = unittest.main()

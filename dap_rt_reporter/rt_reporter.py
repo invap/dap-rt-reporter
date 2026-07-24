@@ -6,9 +6,9 @@ from typing import Self
 from dap_rt_reporter.connection.gdb_connection import GDBConnection
 from dap_rt_reporter.connection.lldb_connection import LLDBConnection
 from dap_rt_reporter.errors import (
+    MultipleDebuggerConnectionError,
     MultipleEventWriterError,
     ReporterBuildError,
-    MultipleDebuggerConnectionError,
 )
 from dap_rt_reporter.event_writer.file_writer import FileWriter
 from dap_rt_reporter.event_writer.rabbitmq_writer import RabbitMQWriter

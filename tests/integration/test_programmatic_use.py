@@ -3,17 +3,17 @@
 #
 # Test file for programmatic use, this is used in the readme as an example.
 
-import unittest
 import csv
 import os
+import unittest
 
-from dap_rt_reporter.rt_reporter import RTReporterBuilder
 from dap_rt_reporter.event.checkpoint_reached_event import (
     CheckpointReachedEvent,
 )
 from dap_rt_reporter.event.variable_value_assigned_event import (
     VariableValueAssignedEvent,
 )
+from dap_rt_reporter.rt_reporter import RTReporterBuilder
 
 
 class TestProgrammaticUse(unittest.TestCase):
