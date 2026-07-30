@@ -52,7 +52,7 @@ class ConnectionWrapper(ABC):
         pass
 
     @abstractmethod
-    def set_breakpoints_source(self, source: str, breakpoints):
+    def set_breakpoints_source(self, source: dict[str, str], breakpoints: list[dict[str, int]]):
         pass
 
     @abstractmethod

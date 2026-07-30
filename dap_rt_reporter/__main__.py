@@ -6,6 +6,7 @@ import csv
 import logging
 import os
 import signal
+from types import FrameType
 
 from dap_rt_reporter.errors import DAPReporterError
 from dap_rt_reporter.event.checkpoint_reached_event import (
@@ -49,25 +50,27 @@ def dap_rt_reporter_runner(
     """
 
     # Set SIGINT handler to handle closing during execution
-    def sigint_handler(signum, frame):
+    def sigint_handler(signum: int, frame: FrameType | None):
         logger.debug("Received SIGINT signal: %s and segnum %d", frame, signum)
         reporter.kill()
 
-    signal.signal(signal.SIGINT, sigint_handler)
+    _ = signal.signal(signal.SIGINT, sigint_handler)
 
     # Create and configure reporter builder
     reporter_builder = RTReporterBuilder()
 
     match debugger_selection:
         case "gdb":
-            reporter_builder.with_gdb(sut, sut_args)
+            _ = reporter_builder.with_gdb(sut, sut_args)
         case "lldb":
-            reporter_builder.with_lldb(sut, sut_args)
+            _ = reporter_builder.with_lldb(sut, sut_args)
+        case _:
+            pass
 
     if use_rabbitmq:
-        reporter_builder.with_rabbitmq_writer()
+        _ = reporter_builder.with_rabbitmq_writer()
     else:
-        reporter_builder.with_file_writer(report_file)
+        _ = reporter_builder.with_file_writer(report_file)
 
     # Create reporter
     reporter = reporter_builder.build()
@@ -76,7 +79,7 @@ def dap_rt_reporter_runner(
 
     # Execute SUT with breakpoints
     try:
-        reporter.execute()
+        _ = reporter.execute()
     except DAPReporterError as e:
         logger.error(f"Reporter execution error: {e}")
 
@@ -213,48 +216,48 @@ def main():
         allow_abbrev=False,
     )
 
-    parser.add_argument(
+    _ = parser.add_argument(
         "-s",
         "--sut",
         help="path to the binary of the program to report",
         required=True,
     )
-    parser.add_argument(
+    _ = parser.add_argument(
         "--configuration-file",
         "--cf",
         help="path to the events configuration file",
         required=True,
     )
-    parser.add_argument(
+    _ = parser.add_argument(
         "--report-file",
         "--rf",
         help="path to the file to store report",
         default="execution.csv",
     )
-    parser.add_argument(
+    _ = parser.add_argument(
         "--rabbitmq-config-file",
         "--rcf",
         help="path to the TOML file with the RabbitMQ server configuration.",
         default="",
     )
-    parser.add_argument(
+    _ = parser.add_argument(
         "-f", "--force", help="force report file rewrite", action="store_true"
     )
-    parser.add_argument("--sut-args", help="add argument for SUT", nargs="+")
-    parser.add_argument(
+    _ = parser.add_argument("--sut-args", help="add argument for SUT", nargs="+")
+    _ = parser.add_argument(
         "-d",
         "--debugger",
         help="debugger selection",
         choices=["gdb", "lldb"],
         default="gdb",
     )
-    parser.add_argument(
+    _ = parser.add_argument(
         "--log-level",
         help="select logging level",
         choices=["info", "debug", "warning", "error", "critical"],
         default="info",
     )
-    parser.add_argument(
+    _ = parser.add_argument(
         "--log-file",
         help="select where to display logs, defaults to console",
         required=False,
@@ -262,12 +265,12 @@ def main():
 
     args = parser.parse_args()
 
-    sut = args.sut
-    config_file = args.configuration_file
-    report_file = args.report_file
-    force = args.force
-    sut_args = " ".join(args.sut_args) if args.sut_args else ""
-    debugger_selection = args.debugger
+    sut: str = str(args.sut)
+    config_file: str = str(args.configuration_file)
+    report_file: str = str(args.report_file)
+    force: bool = bool(args.force)
+    sut_args: str = " ".join(args.sut_args) if args.sut_args else ""
+    debugger_selection: str = str(args.debugger)
 
     # Checks
     if not os.path.isfile(sut):
@@ -280,7 +283,7 @@ def main():
         )
 
     # Logging level
-    match args.log_level:
+    match str(args.log_level):
         case "info":
             logging_level = logging.INFO
         case "debug":
@@ -319,9 +322,9 @@ def main():
     logger.addHandler(handler)
 
     # RabbitMQ configuration
-    USE_RABBITMQ = False
+    use_rabbitmq = False
     if os.path.isfile(args.rabbitmq_config_file):
-        USE_RABBITMQ = True
+        use_rabbitmq = True
         rabbitmq_server_connections.build_rabbitmq_connection_from_toml(
             args.rabbitmq_config_file
         )
@@ -338,11 +341,11 @@ def main():
         report_file,
         sut_args,
         debugger_selection,
-        USE_RABBITMQ,
+        use_rabbitmq,
         config_file,
     )
 
-    if USE_RABBITMQ:
+    if use_rabbitmq:
         rabbitmq_server_connections.rabbitmq_event_server_connection.close()
 
 

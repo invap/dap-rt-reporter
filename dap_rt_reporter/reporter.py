@@ -6,20 +6,20 @@ import time
 from enum import Enum, auto
 from typing import Any
 
-from dap_rt_reporter.event.event import Event
-from dap_rt_reporter.listener import Listener
-from dap_rt_reporter.types import DAPEvent, DAPMessage, DAPRequest
+from dap_rt_reporter.connection.connection_wrapper import ConnectionWrapper
+from dap_rt_reporter.connection.errors import (
+    DAPRequestError,
+    DAPResponseError,
+)
 from dap_rt_reporter.errors import (
     ExecutionError,
     MessageKeyError,
     SetupError,
 )
-from dap_rt_reporter.connection.errors import (
-    DAPRequestError,
-    DAPResponseError,
-)
+from dap_rt_reporter.event.event import Event
 from dap_rt_reporter.event_writer.event_writer import EventWriter
-from dap_rt_reporter.connection.connection_wrapper import ConnectionWrapper
+from dap_rt_reporter.listener import Listener
+from dap_rt_reporter.types import DAPEvent, DAPMessage, DAPRequest
 
 logger = logging.getLogger(__name__)
 
@@ -63,9 +63,9 @@ class Reporter:
         self.state: ReporterState = ReporterState.IDLE
 
         # Create listener
-        self.listener = Listener(event_writer)
+        self.listener: Listener = Listener(event_writer)
 
-        self.debugger_connection = debugger_connection
+        self.debugger_connection: ConnectionWrapper = debugger_connection
 
         # Used for saving events
         self.events: list[Event] = []
@@ -130,7 +130,7 @@ class Reporter:
     def execution_loop(self) -> bool:
         """Main execution and control loop"""
 
-        response = {}
+        response: dict[str, Any] = {}
 
         while self.debugger_connection.get_alive():
             match self.state:
@@ -150,7 +150,7 @@ class Reporter:
 
                 case ReporterState.BREAKPOINT:
                     # Breakpoint hit
-                    self.handle_breakpoints( response)
+                    _ = self.handle_breakpoints( response)
                     self.state = ReporterState.IDLE
 
                 case ReporterState.EXIT:
@@ -159,7 +159,7 @@ class Reporter:
 
         return False
 
-    def handle_breakpoints(self, initial_hit_response) -> ReporterState:
+    def handle_breakpoints(self, initial_hit_response: dict[str, Any]) -> ReporterState:
         """Loop for breakpoint handling"""
 
         current_state = BreakpointHandleState.BEFORE
@@ -196,7 +196,7 @@ class Reporter:
                     # A breakpoint hit occured in the current line, handle all after events
 
                     # Get the thread id that produced the stopped event
-                    thread_id = breakpoint_event["body"]["threadId"]
+                    thread_id: int = int(breakpoint_event["body"]["threadId"])
 
                     # Do a step request
                     self.debugger_connection.next()
@@ -216,16 +216,15 @@ class Reporter:
                     while self.debugger_connection.get_alive():
                         current_response = self._get_next_message()
 
-                        if current_response["type"] == DAPMessage.EVENT:
-                            if current_response["event"] == DAPEvent.STOPPED:
-                                # Save the current stopped event to handle if the after condition is met
-                                current_stopped_event = current_response
-                                break
+                        if current_response["type"] == DAPMessage.EVENT and current_response["event"] == DAPEvent.STOPPED:
+                            # Save the current stopped event to handle if the after condition is met
+                            current_stopped_event = current_response
+                            break
 
                     # Check if the line or source has changed
                     self.debugger_connection.stack_trace(thread_id)
 
-                    current_line: str = ""
+                    current_line: int = -1
                     while self.debugger_connection.get_alive():
                         current_response = self._get_next_message()
 
@@ -239,25 +238,23 @@ class Reporter:
                             break
 
                     # If both the line or the file changed then handle the event
-                    if int(current_line) != breakpoint_line:
-                        # If a breakpoint was set in the middle of this steps they are ignored
+                    # If a breakpoint was set in the middle of this steps they are ignored
+                    # Handle de after events for the previous breakpoint
+                    if current_line != breakpoint_line and current_stopped_event["event"] == DAPEvent.STOPPED:
+                        _ = self.listener.handle_response(
+                            int(1e6 * time.time()),
+                            breakpoint_event,
+                            self.debugger_connection,
+                            False,
+                        )
 
-                        # Handle de after events for the previous breakpoint
-                        if current_stopped_event["event"] == DAPEvent.STOPPED:
-                            self.listener.handle_response(
-                                int(1e6 * time.time()),
-                                breakpoint_event,
-                                self.debugger_connection,
-                                False,
-                            )
-
-                            if current_stopped_event["body"]["reason"] == "breakpoint":
-                                # If the stopped reason was breakpoint, go back to the before step and handle that event
-                                breakpoint_event = current_stopped_event
-                                current_state = BreakpointHandleState.BEFORE
-                            elif current_stopped_event["body"]["reason"] == "step":
-                                # If the stopped reason was next, continue execution because no new breakpoint was hit, finished handling
-                                current_state = BreakpointHandleState.CONTINUE
+                        if current_stopped_event["body"]["reason"] == "breakpoint":
+                            # If the stopped reason was breakpoint, go back to the before step and handle that event
+                            breakpoint_event = current_stopped_event
+                            current_state = BreakpointHandleState.BEFORE
+                        elif current_stopped_event["body"]["reason"] == "step":
+                            # If the stopped reason was next, continue execution because no new breakpoint was hit, finished handling
+                            current_state = BreakpointHandleState.CONTINUE
 
                 case BreakpointHandleState.CONTINUE:
                     # The current set of breakpoints was correctly handled
@@ -300,7 +297,7 @@ class Reporter:
         breakpoint_id_table = {}
         for source_path, event_lists in breakpoint_locations.items():
             # Convert the source and lines to DAP format
-            lines_dap_form = []
+            lines_dap_form: list[dict[str, int]] = []
             for line, event_list in event_lists.items():
                 lines_dap_form.append({"line": int(line)})
 
@@ -315,7 +312,7 @@ class Reporter:
                 breakpoint_id += 1
 
             source = source_path[source_path.rfind("/") + 1]
-            source_dap_form = {"name": source, "path": source_path}
+            source_dap_form: dict[str, str] = {"name": source, "path": source_path}
 
             # Set breakpoints and clear previous ones
             logger.debug("Setting breakpoints for %s", source_dap_form["name"])

@@ -4,7 +4,7 @@
 import json
 import logging
 import sys
-from typing import Any
+from typing import Any, override
 
 from pika import BasicProperties
 from rt_rabbitmq_wrapper.exchange_types.event.event_codec_errors import (
@@ -29,11 +29,12 @@ class RabbitMQWriter(EventWriter):
     def __init__(self):
         super().__init__()
 
+    @override
     def write(self, event: list[Any]):
         """Publish an event to a RabbitMQ server."""
 
         # Convert csv event
-        event_string = ",".join(map(str, event))
+        event_string: str = ",".join(map(str, event))
         try:
             event_u = EventCSVCoDec.from_csv(event_string)
         except EventCSVError:
@@ -41,7 +42,7 @@ class RabbitMQWriter(EventWriter):
             sys.exit(-1)
 
         try:
-            event_dict = EventDictCoDec.to_dict(event_u)
+            event_dict: dict[str, Any] = EventDictCoDec.to_dict(event_u)
         except EventTypeError:
             logger.info(
                 "Error building event dictionary from event: %s", event_u
@@ -60,6 +61,7 @@ class RabbitMQWriter(EventWriter):
             logger.critical("Error while publishing event: %s", event)
             sys.exit(-2)
 
+    @override
     def close(self) -> None:
         """Publish a blank message with the termination header, closes
         connection with monitor.

@@ -2,8 +2,8 @@
 # SPDX-License-Identifier: AGPL-3.0-or-later
 
 import logging
-import tomllib
 import sys
+import tomllib
 
 from rt_rabbitmq_wrapper.rabbitmq_utility import (
     RabbitMQ_server_info,

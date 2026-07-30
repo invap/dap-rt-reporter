@@ -5,7 +5,7 @@ import logging
 from typing import cast, override
 
 import dap
-from dap.types import Source
+from dap.types import Source, SourceBreakpoint
 
 from dap_rt_reporter.connection.connection_wrapper import ConnectionWrapper
 from dap_rt_reporter.connection.stdio_handler import STDIOHandler
@@ -87,10 +87,10 @@ class LLDBConnection(ConnectionWrapper):
         self._send()
 
     @override
-    def set_breakpoints_source(self, source: str, breakpoints):
+    def set_breakpoints_source(self, source: dict[str, str], breakpoints: list[dict[str, int]]):
         """Send set breakpoints in source request, clears all past breakpoints."""
 
-        _ = self.dap_client.set_breakpoints(source=cast(Source, cast(object, source)), breakpoints=breakpoints)
+        _ = self.dap_client.set_breakpoints(source=cast(Source, cast(object, source)), breakpoints=cast(list[SourceBreakpoint], breakpoints))
         self._send()
 
     @override
