@@ -59,12 +59,15 @@ class TestCheckpointReached(unittest.TestCase):
         with open(
             "tests/integration/resources/test_checkpoint_reached.csv"
         ) as log:
-            current_output = list(csv.reader(log))
+            csv_reader = csv.reader(log)
+
+            for row in csv_reader:
+                correct_output.append(row)
 
         # Asserts
         self.assertEqual(len(current_output), len(correct_output))
 
-        for i, (row_a, row_b) in enumerate(
+        for _, (row_a, row_b) in enumerate(
             zip(current_output, correct_output)
         ):
             self.assertEqual(
