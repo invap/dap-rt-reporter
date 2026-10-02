@@ -20,7 +20,7 @@ class LLDBConnection(ConnectionWrapper):
         super().__init__(executable, executable_args)
         self.alive: bool = True
 
-        self.launch_command: list[str] = ["lldb-dap-19"]
+        self.launch_command: list[str] = ["lldb-dap-21"]
 
         self.stdio_handler: STDIOHandler = STDIOHandler(self.launch_command)
         self.dap_client: dap.Client = dap.Client("DAP Client")
@@ -61,7 +61,9 @@ class LLDBConnection(ConnectionWrapper):
     def initialize(self):
         """Send initialize request."""
 
-        # Client already loads the request so only send is needed
+        # Discard the first initialize message and send a custom one
+        _ = self.dap_client.send()
+        _ = self.dap_client.initialize("DAP Client", path_format="path")
         self._send()
 
     @override
@@ -74,7 +76,11 @@ class LLDBConnection(ConnectionWrapper):
             arguments={
                 "program": self.executable,
                 "disableASLR": False,
-                "initCommands": ["settings set target.disable-aslr false"],
+                "initCommands": [
+                    "settings set target.disable-aslr false",
+                    "settings set plugin.symbol-locator.debuginfod.server-urls ''",
+                    "settings set plugin.symbol-locator.debuginfod.timeout 5",
+                ],
             },
         )
         self._send()
