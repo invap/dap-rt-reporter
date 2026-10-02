@@ -89,9 +89,10 @@ class Event(ABC):
                 return None
 
         # Evaluate expression
+        wait_for_response = True
         result: str = ""
         debugger_connection.evaluate(expression, frame_id)
-        while not result:
+        while wait_for_response:
             if debugger_connection.get_alive():
                 response = debugger_connection.get_response()
                 response = self.parse_dap_response(response)
@@ -102,6 +103,7 @@ class Event(ABC):
                 ):
                     if response["success"]:
                         result = str(response["body"]["result"])
+                        wait_for_response = False
                     else:
                         raise RuntimeError(response["message"])
             else:
