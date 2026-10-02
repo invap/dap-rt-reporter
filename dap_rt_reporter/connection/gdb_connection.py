@@ -175,7 +175,7 @@ class GDBConnection(ConnectionWrapper):
     def evaluate(self, expression: str, frame_id: int):
         """Sends evaluate command with given expression in current frame."""
 
-        _ = self.dap_client.evaluate(expression=expression, frame_id=0)
+        _ = self.dap_client.evaluate(expression=expression, frame_id=frame_id)
         self._send()
 
     @override
