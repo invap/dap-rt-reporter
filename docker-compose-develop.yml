@@ -13,6 +13,7 @@ services:
       - /Users/clpombo/sandbox/rt-constellation-experiments/rabbitmq-infrastructure/rabbitmq-infrastructure:/workspaces/rabbitmq-infrastructure     # If the RabbitMQ configuration file path is not set, it will be mounted with the current directory (.) as default value
       - /Users/clpombo/sandbox/rt-monitor-rust-example-app:/workspaces/sut     # If the SUT path is not set, it will be mounted with the current directory (.) as default value
       - /Users/clpombo/sandbox/rt-constellation-experiments/rt-monitor-rust-example-app:/workspaces/experiment     # If the experiment path is not set, it will be mounted with the current directory (.) as default value
+    working_dir: /workspaces
     cap_add:
       - SYS_PTRACE
     security_opt:

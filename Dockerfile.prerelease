@@ -1,4 +1,4 @@
-FROM ubuntu:24.04 AS dap-rt-reporter-prerelease-image 
+FROM ubuntu:26.04 AS dap-rt-reporter-prerelease-image 
 
 RUN echo "Prerelease build target selected. Installing DAP RT-Reporter from repository."
 
